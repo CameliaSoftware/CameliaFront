@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Joyas · Camelia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main>
+    <section class="page-head">
+      <div class="container">
+        <nav class="crumbs" aria-label="Ruta"><a href="index.html">Inicio</a><span>/</span><span data-crumb>Joyas</span></nav>
+        <div class="page-head__row">
+          <div>
+            <h1 class="h2" data-title>Todas las joyas</h1>
+            <p class="muted" style="margin-top:10px" data-subtitle>Plata 925 y oro 18K, hechas en Colombia.</p>
+          </div>
+          <a class="link-arrow" data-design-link href="disena.html">¿No la encuentras? Diséñala</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="container catalog">
+      <aside class="filters" data-filters aria-label="Filtros">
+        <div data-filter-groups></div>
+      </aside>
+
+      <div>
+        <div class="toolbar">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <button class="chip filters-toggle" data-open-filters>Filtros</button>
+            <span class="muted small" data-count></span>
+            <div class="active-filters" data-active></div>
+          </div>
+          <select class="select" data-sort aria-label="Ordenar">
+            <option value="destacados">Destacados</option>
+            <option value="menor">Precio: menor a mayor</option>
+            <option value="mayor">Precio: mayor a menor</option>
+            <option value="nombre">Nombre A–Z</option>
+          </select>
+        </div>
+        <div class="grid" data-results></div>
+      </div>
+    </div>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/jewels.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/categoria.js"></script>
+</body>
+</html>

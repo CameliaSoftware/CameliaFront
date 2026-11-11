@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Camelia · Joyería colombiana en plata 925 y oro 18K</title>
+  <meta name="description" content="Joyas en plata 925 y oro 18K hechas en Colombia. Elige de la colección o diseña tu propia joya en 3D, a mano o con inteligencia artificial.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main>
+    <!-- 1. Inicio: diseña tu joya (configurador) -->
+    <section class="studio-hero" id="disena" aria-label="Diseña tu joya">
+      <div class="container">
+        <div class="studio-hero__head">
+          <p class="label">Dos metales, un universo</p>
+          <h1 class="h1">Diseña la joya que <span class="accent">solo tú</span> imaginas.</h1>
+          <p class="lead">Plata 925 y oro 18K, creadas en 3D, a un precio que no esperas. Elige cada detalle o cuéntale tu idea a la IA.</p>
+          <ol class="studio-hero__steps"><li><span>01</span>Imagina</li><li><span>02</span>Personaliza</li><li><span>03</span>Hazla tuya</li></ol>
+        </div>
+        <div data-studio></div>
+        <p class="studio-hero__alt">¿Prefieres algo listo? <a class="link-arrow" href="#coleccion">Ver la colección</a>
+          <span aria-hidden="true">·</span> ¿Buscas una pulsera tejida? <a class="link-arrow" href="personaliza-pulsera.html">Personalízala con balines de oro 18K</a></p>
+      </div>
+    </section>
+
+    <!-- 2. Beneficios -->
+    <section class="benefits">
+      <div class="container">
+        <ul>
+          <li><span>01</span>Plata 925 y oro 18K</li>
+          <li><span>02</span>Diseñada por ti</li>
+          <li><span>03</span>Hecha a mano en Colombia</li>
+          <li><span>04</span>Envíos asegurados</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3. Categorías (como "Nuestras colecciones" de Kevin's) -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head reveal" style="justify-content:center;text-align:center">
+          <div><span class="label">Encuentra la tuya</span><h2 class="h2">Compra por categoría</h2></div>
+        </div>
+        <div class="collections" data-collections></div>
+      </div>
+    </section>
+
+    <!-- 4. Colección destacada -->
+    <section class="section section--cream" id="coleccion">
+      <div class="container">
+        <div class="section-head">
+          <div class="reveal"><span class="label">Objetos de deseo</span><h2 class="h2">Pequeños universos. Tuyos.</h2></div>
+          <div class="tabs reveal" role="tablist" data-product-tabs>
+            <button role="tab" data-filter="todo" aria-selected="true">Todo</button>
+            <button role="tab" data-filter="plata" aria-selected="false">Plata</button>
+            <button role="tab" data-filter="oro" aria-selected="false">Oro</button>
+          </div>
+        </div>
+        <div class="grid" data-featured></div>
+        <div style="text-align:center;margin-top:48px"><a class="btn btn--ghost" href="categoria.html">Ver todas las joyas</a></div>
+      </div>
+    </section>
+
+    <!-- 5. Modo Plata / Modo Oro -->
+    <section class="section">
+      <div class="container modes">
+        <a class="mode mode--plata reveal" href="categoria.html?metal=plata">
+          <div class="mode__text">
+            <span class="label">01 / Esencia lunar</span>
+            <div><h2 class="h2">Modo<br>Plata.</h2><p class="muted" style="margin-top:12px">La belleza de lo inesperado.<br>Desde $ 119.000.</p></div>
+            <span class="link-arrow">Descubrir <svg class="icon" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></span>
+          </div>
+          <div class="mode__img" data-jewel="anillo" data-metal-fixed="plata" data-variant="organica"></div>
+        </a>
+        <a class="mode mode--oro reveal" href="categoria.html?metal=oro">
+          <div class="mode__text">
+            <span class="label">02 / Energía solar</span>
+            <div><h2 class="h2">Modo<br>Oro.</h2><p class="muted" style="margin-top:12px">La calidez de brillar a tu manera.<br>Desde $ 520.000.</p></div>
+            <span class="link-arrow">Descubrir <svg class="icon" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></span>
+          </div>
+          <div class="mode__img" data-jewel="anillo" data-metal-fixed="oro" data-variant="torcida"></div>
+        </a>
+      </div>
+    </section>
+
+    <!-- 7. Proceso -->
+    <section class="section" id="proceso">
+      <div class="container">
+        <div class="section-head reveal"><div><span class="label">Del diseño a tus manos</span><h2 class="h2">Así nace tu joya</h2></div></div>
+        <div class="process" data-process>
+          <div class="process__line"></div>
+          <article class="step reveal"><span class="step__num">01</span><div class="step__img" data-jewel="anillo" data-variant="geometrica"></div><h3 class="h4">Diseñas</h3><p>Creas tu pieza en 3D, a mano o con ayuda de la IA.</p></article>
+          <article class="step reveal"><span class="step__num">02</span><div class="step__img" data-jewel="dije" data-variant="organica"></div><h3 class="h4">Imprimimos en cera</h3><p>Una impresora 3D convierte tu diseño en un modelo exacto.</p></article>
+          <article class="step reveal"><span class="step__num">03</span><div class="step__img" data-jewel="pulsera" data-variant="clasica"></div><h3 class="h4">Fundimos el metal</h3><p>Fundición a la cera perdida, la técnica de los orfebres.</p></article>
+          <article class="step reveal"><span class="step__num">04</span><div class="step__img" data-jewel="argolla" data-variant="clasica"></div><h3 class="h4">Pulimos y entregamos</h3><p>Llega a tu puerta en una caja de regalo premium.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. Experiencia Camelia + testimonios -->
+    <section class="section section--tight">
+      <div class="container">
+        <div class="section-head reveal" style="justify-content:center;text-align:center"><div><span class="label">Compra tranquilo</span><h2 class="h2">Experiencia Camelia</h2></div></div>
+        <div class="services reveal">
+          <div class="service"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg><strong>Plata 925 certificada</strong><p>Cada pieza lleva su sello de pureza.</p><a class="link-arrow" href="#">Conoce más</a></div>
+          <div class="service"><svg class="icon" viewBox="0 0 24 24"><path d="M6 4h12l3 5-9 11L3 9l3-5Z"/><path d="M3 9h18M9 4l3 16 3-16"/></svg><strong>Oro 18K certificado de por vida</strong><p>Certificado de autenticidad válido de por vida.</p><a class="link-arrow" href="#">Descargar</a></div>
+          <div class="service"><svg class="icon" viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17" r="1.6"/><circle cx="17" cy="17" r="1.6"/></svg><strong>Envío a toda Colombia</strong><p>Asegurado y gratis desde $ 300.000.</p><a class="link-arrow" href="#">Ver envíos</a></div>
+          <div class="service"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="10" r="6"/><path d="m9 15-2 6 5-2 5 2-2-6"/></svg><strong>Garantía de 1 año</strong><p>Ajustes de talla y limpieza sin costo.</p><a class="link-arrow" href="#">Conoce más</a></div>
+          <div class="service"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1.5S12 8 12 8Zm0 0c2-4 6-4 6-1.5S12 8 12 8Z"/></svg><strong>Bono regalo</strong><p>Para que ellos diseñen su propia joya.</p><a class="link-arrow" href="#">Regalar</a></div>
+        </div>
+
+        <div class="testimonials">
+          <div class="reveal"><span class="label">Lo que dicen</span><h2 class="h3" style="margin-top:12px">Joyas con historia, contadas por quienes las llevan.</h2></div>
+          <div class="slider reveal" data-slider>
+            <div class="slider__track" data-track></div>
+            <div class="slider__nav" data-dots></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. CTA final -->
+    <section class="final">
+      <div class="final__half--plata"></div>
+      <div class="final__half--oro"></div>
+      <div class="final__center">
+        <div>
+          <div class="final__rings"><span data-jewel="anillo" data-metal-fixed="plata" data-variant="clasica"></span><span data-jewel="anillo" data-metal-fixed="oro" data-variant="clasica"></span></div>
+          <h2 class="h2">Tu próxima joya aún no existe. <span class="accent">Créala.</span></h2>
+          <a class="btn btn--primary" href="#disena">Empezar a diseñar</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/jewels.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/configurator.js"></script>
+  <script src="js/home.js"></script>
+</body>
+</html>

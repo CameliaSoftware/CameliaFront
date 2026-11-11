@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diseña tu joya · Camelia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="section section--cream" style="padding-top:48px">
+    <div class="container">
+      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Inicio</a><span>/</span><span>Diseña tu joya</span></nav>
+      <div class="studio-head">
+        <div>
+          <h1 class="h2">No la encuentres. <span class="accent">Créala.</span></h1>
+          <p class="muted" style="margin-top:14px;max-width:560px">Elige forma, metal, talla y grabado. O descríbela y deja que la IA te dé ideas. Un diseñador revisa cada pieza antes de fabricarla.</p>
+        </div>
+        <ol><li><span>01</span>Imagina</li><li><span>02</span>Personaliza</li><li><span>03</span>Hazla tuya</li></ol>
+      </div>
+      <div data-studio></div>
+    </div>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/jewels.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/configurator.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      CAMELIA.mountStudio(document.querySelector('[data-studio]'));
+    });
+  </script>
+</body>
+</html>

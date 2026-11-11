@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Personaliza tu pulsera tejida · Camelia</title>
+  <meta name="description" content="Diseña tu pulsera tejida con balines de oro 18K certificado de por vida: elige hilo, ancho, tamaño de los balines y arma tu propia combinación en 3D.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="tj">
+    <div class="container">
+      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Inicio</a><span>/</span><a href="categoria.html?cat=pulseras">Pulseras</a><span>/</span><span>Personaliza tu pulsera tejida</span></nav>
+      <div class="tj__head">
+        <div>
+          <h1 class="h2">Tu pulsera tejida, <span class="accent">a tu manera.</span></h1>
+          <p class="muted">Elige el hilo, el ancho y los balines; arma tu combinación cuenta por cuenta y mírala en 360°.</p>
+        </div>
+        <span class="cert-badge"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>Oro 18K certificado de por vida</span>
+      </div>
+
+      <div class="tj__grid">
+        <!-- Visor 3D -->
+        <div class="tj__stage">
+          <div class="tj__canvas" data-canvas>
+            <p class="tj__loading" data-loading>Preparando tu pulsera…</p>
+          </div>
+          <div class="tj__stage-bar">
+            <span class="tag tag--3d"><svg class="icon" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4h-4"/></svg>Arrastra para girar 360° · rueda para acercar</span>
+            <div class="tj__stage-actions">
+              <button class="chip" data-cam="frente">Frente</button>
+              <button class="chip" data-cam="arriba">Arriba</button>
+              <button class="chip" data-cam="detalle">Detalle</button>
+              <button class="chip" data-autorotate aria-pressed="true">Girar sola</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel de opciones -->
+        <div class="tj__panel">
+          <section class="tj__step">
+            <span class="label">01 · Estilo</span>
+            <div class="tj__styles" data-estilos></div>
+          </section>
+
+          <section class="tj__step">
+            <span class="label">02 · Color del hilo <span data-hilo-name></span></span>
+            <div class="swatches" data-hilos></div>
+          </section>
+
+          <section class="tj__step">
+            <span class="label" data-ancho-label>03 · Ancho del tejido</span>
+            <div class="options" data-anchos></div>
+          </section>
+
+          <section class="tj__step">
+            <span class="label">04 · Balines de oro 18K <span>Tamaño = gramos de oro</span></span>
+            <div class="tj__sizes" data-balines></div>
+          </section>
+
+          <section class="tj__step">
+            <span class="label">05 · Arma tu diseño <span data-fit></span></span>
+            <p class="muted small">Toca una cuenta para agregarla, o arrástrala a la posición que quieras. Arrastra una cuenta fuera de la línea para quitarla.</p>
+            <div class="palette" data-palette></div>
+            <div class="strip-wrap">
+              <div class="strip" data-strip aria-label="Orden de las cuentas"></div>
+              <div class="strip__trash" data-trash>Suelta aquí para quitar</div>
+            </div>
+            <div class="bead-editor" data-editor hidden></div>
+            <div class="tj__row">
+              <label class="range" style="flex:1"><span>Nudos entre cuentas</span><input type="range" min="0" max="3" step="1" data-espacio></label>
+              <span class="small muted" data-espacio-val></span>
+            </div>
+            <div class="tj__presets">
+              <span class="small muted">Ideas:</span>
+              <button class="chip" data-preset="clasica">Clásica</button>
+              <button class="chip" data-preset="alterna">Oro y neopreno</button>
+              <button class="chip" data-preset="medalla">Medalla al centro</button>
+              <button class="chip" data-preset="tres">Tres balines</button>
+              <button class="chip" data-preset="vaciar">Vaciar</button>
+            </div>
+          </section>
+
+          <section class="tj__step">
+            <span class="label">06 · Talla de la muñeca <span>Ajustable ±2 cm con nudo corredizo</span></span>
+            <div class="options" data-tallas></div>
+          </section>
+
+          <section class="tj__summary">
+            <div class="tj__weight">
+              <div><span class="label">Oro 18K en tu pulsera</span><strong data-gramos></strong></div>
+              <p class="small muted" data-gramos-detalle></p>
+            </div>
+            <dl class="tj__lines" data-lineas></dl>
+            <div class="panel__price"><span class="muted">Total</span><span class="price" data-total></span></div>
+            <p class="small muted">Precio del oro: <span data-precio-gramo></span> por gramo. Fabricación: 5 a 8 días hábiles.</p>
+            <button class="btn btn--primary btn--block" data-agregar>Agregar a la bolsa</button>
+            <ul class="perks">
+              <li><svg class="icon" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>Certificado de autenticidad del oro 18K, válido de por vida</li>
+              <li><svg class="icon" viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17" r="1.6"/><circle cx="17" cy="17" r="1.6"/></svg>Envío asegurado a toda Colombia</li>
+            </ul>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/jewels.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script type="module" src="js/pulsera-tejida.js"></script>
+</body>
+</html>
