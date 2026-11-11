@@ -387,7 +387,7 @@
     return lista.length ? lista : fotos;
   };
   C.imgFoto = function (f, cls) {
-    return '<img class="' + (cls || '') + '" src="' + f.url + '" alt="' + String(f.alt || f.descripcion || '').replace(/"/g, '&quot;') + '" loading="lazy" decoding="async">';
+    return '<img class="' + (cls || '') + ' foto--' + (f.tipo || 'producto') + '" src="' + f.url + '" alt="' + String(f.alt || f.descripcion || '').replace(/"/g, '&quot;') + '" loading="lazy" decoding="async">';
   };
   /* Lee las fotos directo de Supabase con la clave pública: las reglas de la base
      de datos solo dejan ver productos publicados, así que no hace falta servidor. */

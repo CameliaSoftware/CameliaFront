@@ -98,6 +98,14 @@
         C.jewelSVG(cat.shape, metal, { variant: p.variant, stone: p.stone, angle: ANGLES[view] }) + '</div>';
   }
 
+  /* Ficha técnica: peso (si lo tiene) + los datos propios de la joya */
+  function fichaHTML() {
+    if (!p.ficha) return 'Metal: ' + C.METALS[metal].label + '. Piedra: ' + C.STONES[p.stone] + '. Hecha a mano en nuestro taller.';
+    var filas = p.ficha.slice();
+    if (p.peso && p.peso[metal]) filas.splice(1, 0, ['Peso', String(p.peso[metal]).replace('.', ',') + ' g']);
+    return '<dl class="ficha">' + filas.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + f[1] + '</dd></div>'; }).join('') + '</dl>';
+  }
+
   function render() {
     var root = document.querySelector('[data-product]');
     var metals = Object.keys(p.metals);
@@ -109,7 +117,7 @@
           '<h1 class="h2" style="margin-top:12px">' + p.name + '</h1>' +
           '<p class="price info__price" style="margin-top:14px">' + C.formatCOP(p.metals[metal]) + '</p>' +
           '<p class="muted small">Hasta 6 cuotas sin interés · PSE, Nequi y tarjetas</p></div>' +
-        '<p>' + p.desc + '. Pieza hecha a mano en Colombia, con acabado pulido y empaque de regalo.</p>' +
+        '<p>' + (p.texto || p.desc + '. Pieza hecha a mano en Colombia, con acabado pulido y empaque de regalo.') + '</p>' +
         '<div class="field"><span class="label">Metal</span><div class="options">' + metals.map(function (m) {
           return '<button class="option" data-metal-pick="' + m + '" aria-pressed="' + (m === metal) + '"><span class="swatch swatch--' + m + '"></span>' + C.METALS[m].label + '</button>';
         }).join('') + '</div></div>' +
@@ -124,7 +132,7 @@
           (p.model ? '<li>' + C.icon('rotate') + 'Modelo 3D a tamaño real: gíralo o mírala en tu espacio</li>' : '') +
           '<li>' + C.icon('truck') + 'Envío asegurado a toda Colombia</li><li>' + C.icon('shield') + 'Garantía de 1 año</li><li>' + C.icon('seal') + (metal === 'oro' ? 'Oro 18K certificado de por vida' : 'Plata 925 certificada') + '</li></ul>' +
         '<div class="accordion">' +
-          '<details open><summary>Detalles' + C.icon('chevron') + '</summary><div>Metal: ' + C.METALS[metal].label + '. Piedra: ' + C.STONES[p.stone] + '. Hecha a mano en nuestro taller.</div></details>' +
+          '<details open><summary>Detalles' + C.icon('chevron') + '</summary><div>' + fichaHTML() + '</div></details>' +
           '<details><summary>Cuidados' + C.icon('chevron') + '</summary><div>Guárdala en su bolsa, lejos de perfumes y cloro. Límpiala con un paño suave.</div></details>' +
           '<details><summary>Envíos y cambios' + C.icon('chevron') + '</summary><div>Entrega en 2 a 5 días hábiles. Tienes 30 días para cambios.</div></details>' +
         '</div>' +

@@ -990,3 +990,16 @@ body.is-dragging-bead { cursor: grabbing; user-select: none; }
 .mnav__tipo { margin: 14px 0 6px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 .mnav__body ul { padding: 0 !important; gap: 8px !important; }
 .mnav__link { display: block; padding: 20px 0; border-bottom: 1px solid var(--line); font: 400 24px/1.1 var(--serif); color: var(--ink); }
+
+/* Ficha técnica del producto */
+.ficha { display: grid; gap: 0; margin: 0; }
+.ficha > div { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.ficha > div:last-child { border-bottom: 0; }
+.ficha dt { color: var(--muted); }
+.ficha dd { margin: 0; text-align: right; color: var(--ink); }
+
+/* Fotos de producto: se ven completas sobre blanco; solo las de modelo llenan el recuadro */
+.gallery__main--foto, .card__view--foto { background: #fff; }
+.gallery__main--foto img, .card__view--foto img { object-fit: contain; }
+.gallery__main--foto img { position: absolute; inset: 0; }
+.gallery__main--foto img.foto--modelo, .card__view--foto img.foto--modelo { object-fit: cover; }

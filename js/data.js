@@ -85,10 +85,18 @@ CAMELIA.PRODUCTS = [
   { id: 'cadena-rio', name: 'Cadena Río', cat: 'cadenas', sub: 'Cadenas dama', variant: 'minimal',
     desc: 'Eslabón veneciano 45 cm', metals: { oro: 1190000, plata: 149000 }, stone: 'ninguna', custom: false,
     model: 'models/cadena-rio.glb' },
+  { id: 'cadena-veneciana', name: 'Cadena Veneciana', cat: 'cadenas', sub: 'Cadenas dama', variant: 'minimal',
+    desc: 'Tejido veneciano con broche de resorte', metals: { oro: 0 }, peso: { oro: 4.5 }, stone: 'ninguna', custom: false,
+    texto: 'Cadena de tejido veneciano (de cajita) en oro 18K, firme y con brillo parejo, con broche de argolla de resorte. En las fotos se muestra con el Dije Cruz de Cristo, que se vende por separado.',
+    ficha: [['Metal', 'Oro amarillo 18K (ley 750)'], ['Tejido', 'Veneciano (de cajita)'], ['Broche', 'Argolla de resorte'], ['Dije', 'No incluido, se vende por separado']] },
   { id: 'cadena-cauca', name: 'Cadena Cauca', cat: 'cadenas', sub: 'Cadenas caballero', variant: 'clasica',
     desc: 'Eslabón cubano 50 cm', metals: { plata: 329000 }, stone: 'ninguna', custom: false,
     model: 'models/cadena-cauca.glb' },
 
+  { id: 'dije-cruz-cristo', name: 'Dije Cruz de Cristo', cat: 'dijes', sub: 'Cristos', variant: 'clasica',
+    desc: 'Cruz calada con el rostro de Cristo en relieve', metals: { oro: 0 }, peso: { oro: 1 }, stone: 'ninguna', custom: false,
+    texto: 'Cruz calada en oro 18K con el rostro de Cristo en relieve y su corona de espinas, en un trabajo de orfebrería muy detallado. La argolla lleva grabada la ley 750. La cadena se vende por separado.',
+    ficha: [['Metal', 'Oro amarillo 18K (ley 750)'], ['Piedras', 'Sin piedras'], ['Cadena', 'No incluida, se vende por separado']] },
   { id: 'dije-colibri', name: 'Dije Colibrí', cat: 'dijes', sub: 'Dijes', variant: 'organica',
     desc: 'Inspirado en el Caribe', metals: { oro: 690000, plata: 139000 }, stone: 'ninguna', custom: true },
   { id: 'dije-inicial', name: 'Dije Inicial', cat: 'dijes', sub: 'Dijes de letra', variant: 'sello',
@@ -142,11 +150,16 @@ CAMELIA.DEPARTAMENTOS = ['Amazonas', 'Antioquia', 'Arauca', 'Atlántico', 'Bogot
 CAMELIA.ENVIO = { gratisDesde: 300000, costo: 15000 };
 
 CAMELIA.ORO18K = {
-  precioGramo: 430000,
+  precioGramo: 1000000,
   densidad: 15.6,           // g/cm³ del oro 18K
   pared: 0.2,               // mm
   medallaGramos: 1.05,      // medalla de 12 mm
 };
+
+/* Joyas con peso: el precio sale de peso × precio del gramo (cambia solo si cambia el precio del oro). */
+CAMELIA.PRODUCTS.forEach(function (p) {
+  if (p.peso && p.peso.oro) p.metals.oro = Math.round(p.peso.oro * CAMELIA.ORO18K.precioGramo);
+});
 
 /* Peso en gramos de un balín hueco de oro 18K según su diámetro en mm */
 CAMELIA.pesoBalin = function (diametro) {
