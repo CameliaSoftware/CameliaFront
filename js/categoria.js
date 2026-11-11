@@ -144,7 +144,7 @@
   function update() { syncURL(); renderHead(); renderFilters(); renderResults(); }
 
   document.addEventListener('DOMContentLoaded', function () {
-    update();
+    C.catalogo.then(update);
 
     document.querySelector('[data-filters]').addEventListener('change', function (e) {
       var input = e.target, key = input.dataset.key;
@@ -192,6 +192,5 @@
   });
 
   document.addEventListener('metalchange', renderResults);
-  document.addEventListener('fotoschange', renderResults);
   document.addEventListener('click', function (e) { if (f.favoritos && e.target.closest('[data-fav]')) setTimeout(renderResults, 0); });
 })();

@@ -3,7 +3,7 @@
 (function () {
   var C = window.CAMELIA;
   var esc = C.esc;
-  var raiz, uid, perfil, dirs = [], editando = null;
+  var raiz, uid, perfil, dirs = [], editando = null, esAdmin = false;
 
   function sinSesion() {
     raiz.innerHTML =
@@ -24,6 +24,7 @@
   }
 
   function pintar() {
+    setTimeout(function () { var l = raiz.querySelector('[data-link-admin]'); if (l) l.hidden = !esAdmin; });
     var falta = C.perfil.faltantes(perfil, dirs);
     var foto = perfil.foto_url || C.auth.foto();
     raiz.innerHTML =
@@ -33,7 +34,8 @@
           '<div><span class="label">Mi cuenta</span><h1 class="h2">Hola, ' + esc((perfil.nombre || '').split(' ')[0] || 'bienvenida') + '</h1>' +
           '<p class="muted small">' + esc(perfil.email) + ' · entras con Google</p></div>' +
         '</div>' +
-        '<button class="btn btn--ghost" data-salir>Cerrar sesión</button>' +
+        '<div class="adm__acciones"><a class="btn btn--primary" href="admin.html" data-link-admin hidden>Panel de administración</a>' +
+        '<button class="btn btn--ghost" data-salir>Cerrar sesión</button></div>' +
       '</div>' +
 
       (falta.length
@@ -170,6 +172,12 @@
         perfil = r[0]; dirs = r[1];
         pintar();
         eventos();
+        // Si la cuenta es de administrador, mostrar el acceso al panel
+        C.sb.rpc('es_admin').then(function (x) {
+          if (!x.data) return;
+          esAdmin = true;
+          var l = raiz.querySelector('[data-link-admin]'); if (l) l.hidden = false;
+        });
       });
     }).catch(function (e) {
       raiz.innerHTML = '<p class="form-error" style="padding:60px 0">No se pudo cargar tu cuenta: ' + esc(e.message) + '</p>';

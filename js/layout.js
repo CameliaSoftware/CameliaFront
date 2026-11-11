@@ -389,33 +389,65 @@
   C.imgFoto = function (f, cls, inmediata) {
     return '<img class="' + (cls || '') + ' foto--' + (f.tipo || 'producto') + '" src="' + f.url + '" alt="' + String(f.alt || f.descripcion || '').replace(/"/g, '&quot;') + '" loading="' + (inmediata ? 'eager' : 'lazy') + '" decoding="async">';
   };
-  /* Lee las fotos directo de Supabase con la clave pública: las reglas de la base
-     de datos solo dejan ver productos publicados, así que no hace falta servidor. */
-  C.cargarFotos = function () {
-    var S = C.SUPABASE;
-    if (!S || !window.fetch) return;
-    var campos = 'id,imagenes(archivo,metal,orden,origen,tipo,alt,descripcion)';
-    fetch(S.url + '/rest/v1/productos?select=' + encodeURIComponent(campos) + '&activo=eq.true&estado=eq.publicado', {
-      headers: { apikey: S.key },
-    })
-      .then(function (r) { return r.ok ? r.json() : []; })
-      .then(function (lista) {
-        var hay = false;
-        lista.forEach(function (item) {
-          var p = C.getProduct(item.id);
-          if (!p || !item.imagenes || !item.imagenes.length) return;
-          p.fotos = item.imagenes
-            .sort(function (a, b) { return a.orden - b.orden; })
-            .map(function (f) {
-              f.url = S.url + '/storage/v1/object/public/joyas/' + f.archivo.split('/').map(encodeURIComponent).join('/');
-              return f;
-            });
-          hay = true;
-        });
-        if (hay) document.dispatchEvent(new CustomEvent('fotoschange'));
-      })
-      .catch(function () { /* sin API: se quedan los dibujos */ });
+  /* ---------- Catálogo desde la base de datos ----------
+     La tienda lee las joyas, sus precios y fotos directo de Supabase con la clave pública
+     (las reglas de la base de datos solo dejan ver lo publicado). Lo que el administrador
+     cambie se ve al recargar. Si la base de datos no responde, se usa la copia de data.js. */
+  C.urlFoto = function (archivo) {
+    return C.SUPABASE.url + '/storage/v1/object/public/joyas/' + String(archivo).split('/').map(encodeURIComponent).join('/');
   };
+
+  /* Convierte una fila de la base de datos en una joya de la tienda */
+  C.desdeBase = function (r, gramo) {
+    var metals = {}, peso = {}, largo = null;
+    (r.variantes || []).filter(function (v) { return v.activo !== false; }).forEach(function (v) {
+      var calculado = v.peso_gramos && gramo[v.metal] ? Math.round(Number(v.peso_gramos) * gramo[v.metal] + (v.costo_hechura || 0)) : null;
+      var precio = v.precio_fijo || calculado;
+      if (!precio) return;
+      if (!metals[v.metal] || precio < metals[v.metal]) metals[v.metal] = precio;
+      if (v.peso_gramos) peso[v.metal] = Number(v.peso_gramos);
+      if (v.largo_cm) largo = Number(v.largo_cm);
+    });
+    if (!Object.keys(metals).length) {   // sin variantes: precio guardado en el producto
+      if (r.precio_oro) metals.oro = r.precio_oro;
+      if (r.precio_plata) metals.plata = r.precio_plata;
+    }
+    var ficha = Array.isArray(r.ficha) ? r.ficha.slice() : null;
+    if (largo && ficha && !ficha.some(function (f) { return f[0] === 'Largo'; })) ficha.splice(1, 0, ['Largo', String(largo).replace('.', ',') + ' cm']);
+    return {
+      id: r.id, name: r.nombre, cat: r.categoria, sub: r.subcategoria || '', variant: r.figura || 'clasica',
+      desc: r.descripcion || '', texto: r.texto || null, ficha: ficha, complementos: r.complementos || null,
+      metals: metals, peso: Object.keys(peso).length ? peso : null, stone: r.piedra || 'ninguna', custom: !!r.personalizable,
+      model: r.modelo_3d || null, detalle: r.detalle_3d || null,
+      fotos: (r.imagenes || []).slice().sort(function (a, b) { return a.orden - b.orden; })
+        .map(function (f) { f.url = C.urlFoto(f.archivo); return f; }),
+    };
+  };
+
+  var listo;
+  C.catalogo = new Promise(function (resolve) { listo = resolve; });
+  C.cargarCatalogo = function () {
+    var S = C.SUPABASE;
+    if (!S || !window.fetch) return listo(false);
+    var limite = setTimeout(function () { listo(false); }, 6000);
+    var h = { headers: { apikey: S.key } };
+    var campos = '*,variantes(metal,peso_gramos,precio_fijo,costo_hechura,largo_cm,activo),imagenes(archivo,metal,orden,origen,tipo,alt,descripcion)';
+    var json = function (r) { if (!r.ok) throw new Error(r.status); return r.json(); };
+    Promise.all([
+      fetch(S.url + '/rest/v1/productos?select=' + encodeURIComponent(campos) + '&activo=eq.true&estado=eq.publicado&order=orden.asc,nombre.asc', h).then(json),
+      fetch(S.url + '/rest/v1/precios_metal?select=metal,precio_gramo', h).then(json),
+    ]).then(function (res) {
+      var gramo = {};
+      res[1].forEach(function (x) { gramo[x.metal] = x.precio_gramo; });
+      if (gramo.oro) C.ORO18K.precioGramo = gramo.oro;
+      var lista = res[0].map(function (r) { return C.desdeBase(r, gramo); }).filter(function (p) { return Object.keys(p.metals).length; });
+      C.PRODUCTS.splice.apply(C.PRODUCTS, [0, C.PRODUCTS.length].concat(lista));
+      clearTimeout(limite);
+      listo(true);
+      document.dispatchEvent(new CustomEvent('catalogochange'));
+    }).catch(function () { clearTimeout(limite); listo(false); });
+  };
+  C.cargarCatalogo();
 
   /* ---------- Tarjeta de producto ---------- */
   function vistasTarjeta(p, cat, m) {
@@ -531,6 +563,5 @@
     onScroll();
 
     C.observeReveal();
-    C.cargarFotos();
   });
 })();

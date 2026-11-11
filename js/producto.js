@@ -3,10 +3,17 @@
 (function () {
   var C = CAMELIA;
   var params = new URLSearchParams(location.search);
-  var p = C.getProduct(params.get('id')) || C.PRODUCTS[0];
-  var cat = C.getCategory(p.cat);
-  var metal = p.metals[params.get('metal')] ? params.get('metal') : C.displayMetal(p, C.state.metal);
-  var hasSize = p.cat === 'anillos' || p.cat === 'argollas';
+  /* La joya se busca cuando llega el catálogo de la base de datos */
+  var p, cat, metal, hasSize;
+  function resolver() {
+    p = C.getProduct(params.get('id'));
+    if (!p) return false;
+    cat = C.getCategory(p.cat) || C.CATEGORIES[0];
+    metal = p.metals[params.get('metal')] ? params.get('metal') : C.displayMetal(p, C.state.metal);
+    hasSize = p.cat === 'anillos' || p.cat === 'argollas';
+    if (p.detalle) VIEWS_3D[1] = { name: 'Detalle', orbit: p.detalle.orbit, target: p.detalle.target };
+    return true;
+  }
   var size = null, view = 0;
   var ANGLES = [0, 40, 90, 140];
 
@@ -18,7 +25,6 @@
     { name: 'Arriba', orbit: '0deg 15deg auto', target: 'auto auto auto' },
   ];
 
-  if (p.detalle) VIEWS_3D[1] = { name: 'Detalle', orbit: p.detalle.orbit, target: p.detalle.target };
 
   /* El visor se crea una sola vez y se reutiliza (así no recarga el modelo al cambiar de metal) */
   var viewer = null;
@@ -195,11 +201,21 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    C.catalogo.then(iniciar);
+  });
+
+  function iniciar() {
+    if (!resolver()) {
+      document.querySelector('[data-product]').innerHTML = '<div class="empty" style="grid-column:1/-1;padding:80px 0;text-align:center">' +
+        '<p class="h4 serif">Esta joya ya no está disponible</p><p class="muted">Mira otras piezas de la colección.</p>' +
+        '<a class="btn btn--primary" href="categoria.html">Ver joyas</a></div>';
+      document.title = 'Joya no disponible · Camelia';
+      return;
+    }
     document.title = p.name + ' · Camelia';
     document.querySelector('[data-crumbs]').innerHTML = '<a href="index.html">Inicio</a><span>/</span><a href="categoria.html?cat=' + cat.id + '">' + cat.name + '</a><span>/</span><span>' + p.name + '</span>';
     render();
     renderRelated();
-    document.addEventListener('fotoschange', function () { fotoSel = 0; render(); renderRelated(); });
 
     document.querySelector('[data-product]').addEventListener('change', function (e) {
       var x = e.target.closest('[data-extra]');
@@ -219,5 +235,5 @@
         complementos().forEach(function (c) { if (extras[c.id]) C.addProductToCart(c, metal); });
       }
     });
-  });
+  }
 })();

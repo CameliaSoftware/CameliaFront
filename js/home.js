@@ -104,7 +104,7 @@
     paintJewels();
     initHero();
     renderCollections();
-    renderFeatured();
+    C.catalogo.then(function () { renderFeatured(); C.observeReveal(); });
     initTabs();
     initProcess();
     initSlider();
@@ -114,5 +114,4 @@
 
   /* Al cambiar Plata | Oro se actualizan las joyas y los precios mostrados */
   document.addEventListener('metalchange', function () { paintJewels(); renderFeatured(); });
-  document.addEventListener('fotoschange', renderFeatured);
 })();

@@ -910,3 +910,6 @@ strip.addEventListener('keydown', (e) => {
 const loading = document.querySelector('[data-loading]');
 if (loading && !SIN_3D) loading.remove();
 actualizar();
+
+// Si el precio del oro cambió en la base de datos, se actualizan los precios mostrados
+document.addEventListener('catalogochange', () => actualizar(false));
