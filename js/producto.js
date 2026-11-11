@@ -72,8 +72,7 @@
       ? '<div class="gallery__main gallery__main--3d" data-slot><span class="tag"><i class="dot dot--' + metal + '"></i>' + C.METALS[metal].label + '</span>' +
         '<span class="tag tag--3d gallery__hint">' + C.icon('rotate') + 'Arrastra para girar · pellizca para acercar</span></div>'
       : '<div class="gallery__main gallery__main--foto">' + C.imgFoto(f) +
-        '<span class="tag"><i class="dot dot--' + metal + '"></i>' + C.METALS[metal].label + '</span>' +
-        (f.origen === 'ia' ? '<span class="tag tag--ilustrativa">Imagen ilustrativa</span>' : '') + '</div>';
+        '<span class="tag"><i class="dot dot--' + metal + '"></i>' + C.METALS[metal].label + '</span>' + '</div>';
     return '<div class="gallery__thumbs">' + thumbs + '</div>' + principal;
   }
 

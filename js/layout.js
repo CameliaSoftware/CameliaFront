@@ -423,8 +423,7 @@
     if (fotos.length) {
       var b = fotos[1] || fotos[0];
       return '<span class="card__view card__view--foto card__view--a">' + C.imgFoto(fotos[0]) + '</span>' +
-        '<span class="card__view card__view--foto card__view--b">' + C.imgFoto(b) + '</span>' +
-        (fotos[0].origen === 'ia' ? '<span class="tag tag--ilustrativa">Imagen ilustrativa</span>' : '');
+        '<span class="card__view card__view--foto card__view--b">' + C.imgFoto(b) + '</span>';
     }
     return '<span class="card__view card__view--a">' + C.jewelSVG(cat.shape, m, { variant: p.variant, stone: p.stone }) + '</span>' +
       '<span class="card__view card__view--b">' + C.jewelSVG(cat.shape, m, { variant: p.variant, stone: p.stone, angle: 40 }) + '</span>';
