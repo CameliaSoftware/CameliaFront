@@ -133,7 +133,6 @@
           '<li>' + C.icon('truck') + 'Envío asegurado a toda Colombia</li><li>' + C.icon('shield') + 'Garantía de 1 año</li><li>' + C.icon('seal') + (metal === 'oro' ? 'Oro 18K certificado de por vida' : 'Plata 925 certificada') + '</li></ul>' +
         '<div class="accordion">' +
           '<details open><summary>Detalles' + C.icon('chevron') + '</summary><div>' + fichaHTML() + '</div></details>' +
-          '<details><summary>Cuidados' + C.icon('chevron') + '</summary><div>Guárdala en su bolsa, lejos de perfumes y cloro. Límpiala con un paño suave.</div></details>' +
           '<details><summary>Envíos y cambios' + C.icon('chevron') + '</summary><div>Entrega en 2 a 5 días hábiles. Tienes 30 días para cambios.</div></details>' +
         '</div>' +
       '</div>';
