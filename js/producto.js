@@ -106,6 +106,35 @@
     return '<dl class="ficha">' + filas.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + f[1] + '</dd></div>'; }).join('') + '</dl>';
   }
 
+  /* Complementos: otra joya que se puede sumar con un clic (ej. la cadena + el dije) */
+  var extras = {};
+  function complementos() {
+    return (p.complementos || []).map(C.getProduct).filter(function (c) { return c && c.metals[metal]; });
+  }
+  function complementosHTML() {
+    var lista = complementos();
+    if (!lista.length) return '';
+    return '<div class="field"><span class="label">Combínala con</span><div class="combo">' + lista.map(function (c) {
+      var foto = C.fotosDe(c, metal)[0];
+      var img = foto ? C.imgFoto(foto) : C.jewelSVG(C.getCategory(c.cat).shape, metal, { variant: c.variant, stone: c.stone });
+      return '<label class="combo__item"><input type="checkbox" data-extra="' + c.id + '"' + (extras[c.id] ? ' checked' : '') + '>' +
+        '<span class="combo__img">' + img + '</span>' +
+        '<span class="combo__txt"><strong>Agregar ' + c.name + '</strong><span class="muted small">' + C.formatCOP(c.metals[metal]) +
+        (c.peso && c.peso[metal] ? ' · ' + String(c.peso[metal]).replace('.', ',') + ' g' : '') + '</span></span>' +
+        '<a class="link-arrow small" href="producto.html?id=' + c.id + '&metal=' + metal + '">Ver</a></label>';
+    }).join('') + '</div><p class="combo__total" data-combo-total hidden></p></div>';
+  }
+  function pintarTotal() {
+    var el = document.querySelector('[data-combo-total]');
+    if (!el) return;
+    var sel = complementos().filter(function (c) { return extras[c.id]; });
+    var total = sel.reduce(function (n, c) { return n + c.metals[metal]; }, p.metals[metal]);
+    el.hidden = !sel.length;
+    el.innerHTML = 'Total con ' + sel.map(function (c) { return c.name; }).join(' y ') + ': <strong>' + C.formatCOP(total) + '</strong>';
+    var b = document.querySelector('[data-buy]');
+    if (b) b.textContent = sel.length ? 'Agregar ' + (sel.length + 1) + ' joyas a la bolsa' : 'Agregar a la bolsa';
+  }
+
   function render() {
     var root = document.querySelector('[data-product]');
     var metals = Object.keys(p.metals);
@@ -121,6 +150,7 @@
         '<div class="field"><span class="label">Metal</span><div class="options">' + metals.map(function (m) {
           return '<button class="option" data-metal-pick="' + m + '" aria-pressed="' + (m === metal) + '"><span class="swatch swatch--' + m + '"></span>' + C.METALS[m].label + '</button>';
         }).join('') + '</div></div>' +
+        complementosHTML() +
         (hasSize ? '<div class="field"><span class="label">Talla <a href="#" class="muted">Guía de tallas</a></span><div class="options">' +
           [5, 6, 7, 8, 9, 10, 11].map(function (n) {
             return '<button class="option option--size" data-size="' + n + '" aria-pressed="' + (n === size) + '">' + n + '</button>';
@@ -137,6 +167,7 @@
         '</div>' +
       '</div>';
 
+    pintarTotal();
     var slot = root.querySelector('[data-slot]');
     if (slot) { slot.appendChild(getViewer()); paintMetal(); }
   }
@@ -168,6 +199,10 @@
     renderRelated();
     document.addEventListener('fotoschange', function () { fotoSel = 0; render(); renderRelated(); });
 
+    document.querySelector('[data-product]').addEventListener('change', function (e) {
+      var x = e.target.closest('[data-extra]');
+      if (x) { extras[x.dataset.extra] = x.checked; pintarTotal(); }
+    });
     document.querySelector('[data-product]').addEventListener('click', function (e) {
       var v = e.target.closest('[data-view]'), m = e.target.closest('[data-metal-pick]'), s = e.target.closest('[data-size]');
       var fo = e.target.closest('[data-foto]');
@@ -179,6 +214,7 @@
       else if (e.target.closest('[data-buy]')) {
         if (hasSize && !size) { document.querySelector('[data-size-msg]').hidden = false; return; }
         C.addProductToCart(p, metal, { size: size });
+        complementos().forEach(function (c) { if (extras[c.id]) C.addProductToCart(c, metal); });
       }
     });
   });
