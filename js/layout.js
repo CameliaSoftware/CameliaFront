@@ -369,15 +369,28 @@
   C.imgFoto = function (f, cls) {
     return '<img class="' + (cls || '') + '" src="' + f.url + '" alt="' + String(f.alt || f.descripcion || '').replace(/"/g, '&quot;') + '" loading="lazy" decoding="async">';
   };
+  /* Lee las fotos directo de Supabase con la clave pública: las reglas de la base
+     de datos solo dejan ver productos publicados, así que no hace falta servidor. */
   C.cargarFotos = function () {
-    if (!C.API || !window.fetch) return;
-    fetch(C.API + '/api/productos')
+    var S = C.SUPABASE;
+    if (!S || !window.fetch) return;
+    var campos = 'id,imagenes(archivo,metal,orden,origen,tipo,alt,descripcion)';
+    fetch(S.url + '/rest/v1/productos?select=' + encodeURIComponent(campos) + '&activo=eq.true&estado=eq.publicado', {
+      headers: { apikey: S.key },
+    })
       .then(function (r) { return r.ok ? r.json() : []; })
       .then(function (lista) {
         var hay = false;
         lista.forEach(function (item) {
           var p = C.getProduct(item.id);
-          if (p && item.imagenes && item.imagenes.length) { p.fotos = item.imagenes; hay = true; }
+          if (!p || !item.imagenes || !item.imagenes.length) return;
+          p.fotos = item.imagenes
+            .sort(function (a, b) { return a.orden - b.orden; })
+            .map(function (f) {
+              f.url = S.url + '/storage/v1/object/public/joyas/' + f.archivo.split('/').map(encodeURIComponent).join('/');
+              return f;
+            });
+          hay = true;
         });
         if (hay) document.dispatchEvent(new CustomEvent('fotoschange'));
       })

@@ -121,12 +121,6 @@ CAMELIA.TESTIMONIALS = [
    pared: grosor de la pared del balín hueco en mm (define el peso). */
 CAMELIA.CERTIFICADO = 'Oro 18K certificado de por vida';
 
-/* Dirección del API (CameliaBack). Las fotos de cada producto se piden ahí;
-   si el API no responde, la página sigue funcionando con los dibujos. */
-CAMELIA.API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname)
-  ? 'http://localhost:4000'
-  : 'https://api.' + location.hostname.replace(/^www\./, '');   // ej. camelia.co -> https://api.camelia.co
-
 /* Supabase (inicio de sesión con Google). La clave "publishable" es pública por diseño:
    la seguridad la ponen las reglas (RLS) de la base de datos. */
 CAMELIA.SUPABASE = {
