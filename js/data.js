@@ -24,46 +24,52 @@ CAMELIA.PRICE_RANGES = [
 ];
 
 /* Categorías del menú principal. `shape` define el dibujo que se usa como imagen. */
+/* Tipos de joya. Cada uno tiene subcategorías distintas en Oro y en Plata:
+   el menú muestra "Oro" y "Plata" por separado con estas listas.
+   home:false = no aparece en las colecciones de la página de inicio. */
 CAMELIA.CATEGORIES = [
-  {
-    id: 'anillos', name: 'Anillos', shape: 'anillo',
-    subs: ['Solitarios', 'Compromiso', 'Sellos', 'Minimalistas', 'Para hombre'],
-  },
-  {
-    id: 'aretes', name: 'Aretes', shape: 'arete',
-    subs: ['Candongas', 'Topos', 'Largos', 'Ear cuffs'],
-  },
-  {
-    id: 'cadenas', name: 'Cadenas', shape: 'cadena',
-    subs: ['Finas', 'Gruesas', 'Con dije', 'Para hombre'],
-  },
-  {
-    id: 'dijes', name: 'Dijes', shape: 'dije',
-    subs: ['Iniciales', 'Naturaleza', 'Religiosos', 'Medallas'],
-  },
-  {
-    id: 'pulseras', name: 'Pulseras', shape: 'pulsera',
-    subs: ['Esclavas', 'Tejidas', 'Con dijes', 'Rígidas'],
-  },
-  {
-    id: 'argollas', name: 'Argollas de matrimonio', shortName: 'Argollas', shape: 'argolla',
-    subs: ['Clásicas', 'Con piedras', 'Dos tonos', 'Grabadas'],
-  },
+  { id: 'anillos', name: 'Anillos', shape: 'anillo', subs: {
+    oro: ['Anillos', 'Anillos pesados dama', 'Anillos de compromiso', 'Anillos en oro blanco', 'Anillos con esmeralda', 'Anillos con diamante', 'Anillos caballero'],
+    plata: ['Anillos', 'Anillos con esmeralda'],
+  } },
+  { id: 'aretes', name: 'Aretes', shape: 'arete', subs: {
+    oro: ['Aros', 'Candongas', 'Topos', 'Topos con esmeralda', 'Topos doble servicio', 'Topos con diamante'],
+    plata: ['Candongas', 'Topos', 'Topos con esmeralda'],
+  } },
+  { id: 'cadenas', name: 'Cadenas', shape: 'cadena', subs: {
+    oro: ['Cadenas dama', 'Cadenas caballero'],
+    plata: ['Cadenas dama', 'Cadenas caballero'],
+  } },
+  { id: 'dijes', name: 'Dijes', shape: 'dije', subs: {
+    oro: ['Dijes', 'Dijes con esmeralda', 'Dijes de letra', 'Cristos', 'Medallas'],
+    plata: ['Dijes con esmeralda'],
+  } },
+  { id: 'pulseras', name: 'Pulseras', shape: 'pulsera', subs: { oro: ['Pulseras'], plata: ['Pulseras'] } },
+  { id: 'argollas', name: 'Argollas de matrimonio', shortName: 'Argollas', shape: 'argolla', subs: { oro: ['Argollas'], plata: [] } },
+  { id: 'juegos', name: 'Juegos', shape: 'arete', home: false, subs: { oro: [], plata: ['Juegos'] } },
 ];
+
+/* Categorías internas de inventario: solo para el panel, nunca se muestran en la tienda. */
+CAMELIA.CATEGORIAS_INTERNAS = ['Vitrina', 'Consignación piedra', 'Consignación no piedra'];
+
+/* Tipos de joya que tienen subcategorías en un metal (para armar el menú de Oro o de Plata) */
+CAMELIA.categoriasDe = function (metal) {
+  return CAMELIA.CATEGORIES.filter(function (c) { return c.subs[metal] && c.subs[metal].length; });
+};
 
 /* metals: precio por metal disponible. El primer metal es el principal.
    model (opcional): modelo 3D en GLB que se puede girar en la página del producto.
    detalle (opcional): cámara de la vista "Detalle" del visor 3D (por defecto, la parte baja del collar). */
 CAMELIA.PRODUCTS = [
-  { id: 'anillo-orbita', name: 'Anillo Órbita', cat: 'anillos', sub: 'Minimalistas', variant: 'organica',
+  { id: 'anillo-orbita', name: 'Anillo Órbita', cat: 'anillos', sub: 'Anillos', variant: 'organica',
     desc: 'Acabado espejo', metals: { plata: 189000, oro: 1290000 }, stone: 'ninguna', custom: true },
-  { id: 'anillo-sol', name: 'Anillo Sol', cat: 'anillos', sub: 'Minimalistas', variant: 'torcida',
+  { id: 'anillo-sol', name: 'Anillo Sol', cat: 'anillos', sub: 'Anillos', variant: 'torcida',
     desc: 'Forma orgánica', metals: { oro: 1290000, plata: 179000 }, stone: 'ninguna', custom: true },
-  { id: 'solitario-luna', name: 'Solitario Luna', cat: 'anillos', sub: 'Compromiso', variant: 'clasica',
+  { id: 'solitario-luna', name: 'Solitario Luna', cat: 'anillos', sub: 'Anillos de compromiso', variant: 'clasica',
     desc: 'Circón talla brillante', metals: { oro: 2390000, plata: 259000 }, stone: 'circon', custom: true },
-  { id: 'sello-raiz', name: 'Sello Raíz', cat: 'anillos', sub: 'Sellos', variant: 'sello',
+  { id: 'sello-raiz', name: 'Sello Raíz', cat: 'anillos', sub: 'Anillos caballero', variant: 'sello',
     desc: 'Grabado a mano', metals: { plata: 239000, oro: 1890000 }, stone: 'ninguna', custom: true },
-  { id: 'anillo-prisma', name: 'Anillo Prisma', cat: 'anillos', sub: 'Para hombre', variant: 'geometrica',
+  { id: 'anillo-prisma', name: 'Anillo Prisma', cat: 'anillos', sub: 'Anillos', variant: 'geometrica',
     desc: 'Facetado geométrico', metals: { plata: 219000 }, stone: 'ninguna', custom: false },
 
   { id: 'aretes-eclipse', name: 'Aretes Eclipse', cat: 'aretes', sub: 'Candongas', variant: 'clasica',
@@ -73,32 +79,32 @@ CAMELIA.PRODUCTS = [
   { id: 'candongas-marea', name: 'Candongas Marea', cat: 'aretes', sub: 'Candongas', variant: 'torcida',
     desc: 'Textura ondulada', metals: { plata: 169000 }, stone: 'ninguna', custom: true },
 
-  { id: 'collar-aura', name: 'Collar Aura', cat: 'cadenas', sub: 'Con dije', variant: 'clasica',
+  { id: 'collar-aura', name: 'Collar Aura', cat: 'cadenas', sub: 'Cadenas dama', variant: 'clasica',
     desc: 'Perla natural', metals: { plata: 249000, oro: 1490000 }, stone: 'perla', custom: false,
     model: 'models/collar-aura.glb' },
-  { id: 'cadena-rio', name: 'Cadena Río', cat: 'cadenas', sub: 'Finas', variant: 'minimal',
+  { id: 'cadena-rio', name: 'Cadena Río', cat: 'cadenas', sub: 'Cadenas dama', variant: 'minimal',
     desc: 'Eslabón veneciano 45 cm', metals: { oro: 1190000, plata: 149000 }, stone: 'ninguna', custom: false,
     model: 'models/cadena-rio.glb' },
-  { id: 'cadena-cauca', name: 'Cadena Cauca', cat: 'cadenas', sub: 'Gruesas', variant: 'clasica',
+  { id: 'cadena-cauca', name: 'Cadena Cauca', cat: 'cadenas', sub: 'Cadenas caballero', variant: 'clasica',
     desc: 'Eslabón cubano 50 cm', metals: { plata: 329000 }, stone: 'ninguna', custom: false,
     model: 'models/cadena-cauca.glb' },
 
-  { id: 'dije-colibri', name: 'Dije Colibrí', cat: 'dijes', sub: 'Naturaleza', variant: 'organica',
+  { id: 'dije-colibri', name: 'Dije Colibrí', cat: 'dijes', sub: 'Dijes', variant: 'organica',
     desc: 'Inspirado en el Caribe', metals: { oro: 690000, plata: 139000 }, stone: 'ninguna', custom: true },
-  { id: 'dije-inicial', name: 'Dije Inicial', cat: 'dijes', sub: 'Iniciales', variant: 'sello',
+  { id: 'dije-inicial', name: 'Dije Inicial', cat: 'dijes', sub: 'Dijes de letra', variant: 'sello',
     desc: 'Tu letra, grabada', metals: { plata: 119000, oro: 520000 }, stone: 'ninguna', custom: true },
 
-  { id: 'pulsera-hematita', name: 'Pulsera Hematita', cat: 'pulseras', sub: 'Tejidas', variant: 'clasica',
+  { id: 'pulsera-hematita', name: 'Pulsera Hematita', cat: 'pulseras', sub: 'Pulseras', variant: 'clasica',
     desc: 'Hematita mate, cordón ajustable y dije V', metals: { oro: 690000, plata: 169000 }, stone: 'color', custom: true,
     model: 'models/pulsera-hematita.glb', detalle: { orbit: '0deg 85deg 0.045m', target: '-0.014m -0.03m 0m' } },
-  { id: 'pulsera-orilla', name: 'Pulsera Orilla', cat: 'pulseras', sub: 'Esclavas', variant: 'clasica',
+  { id: 'pulsera-orilla', name: 'Pulsera Orilla', cat: 'pulseras', sub: 'Pulseras', variant: 'clasica',
     desc: 'Cierre invisible', metals: { plata: 199000, oro: 1590000 }, stone: 'ninguna', custom: true },
-  { id: 'pulsera-astro', name: 'Pulsera Astro', cat: 'pulseras', sub: 'Con dijes', variant: 'minimal',
+  { id: 'pulsera-astro', name: 'Pulsera Astro', cat: 'pulseras', sub: 'Pulseras', variant: 'minimal',
     desc: 'Circones de color', metals: { oro: 980000, plata: 189000 }, stone: 'color', custom: false },
 
-  { id: 'argollas-eterna', name: 'Argollas Eterna', cat: 'argollas', sub: 'Clásicas', variant: 'clasica',
+  { id: 'argollas-eterna', name: 'Argollas Eterna', cat: 'argollas', sub: 'Argollas', variant: 'clasica',
     desc: 'Par · confort fit', metals: { oro: 2890000, plata: 389000 }, stone: 'ninguna', custom: true },
-  { id: 'argollas-dos-mundos', name: 'Argollas Dos Mundos', cat: 'argollas', sub: 'Dos tonos', variant: 'torcida',
+  { id: 'argollas-dos-mundos', name: 'Argollas Dos Mundos', cat: 'argollas', sub: 'Argollas', variant: 'torcida',
     desc: 'Par · plata y oro', metals: { oro: 1990000 }, stone: 'ninguna', custom: true },
 ];
 

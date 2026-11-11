@@ -52,11 +52,12 @@
 
   /* ---------- Encabezado ---------- */
   function headerHTML() {
-    var nav = C.CATEGORIES.map(function (cat) {
-      return '<li class="nav__item" data-cat="' + cat.id + '">' +
-        '<a class="nav__link" href="categoria.html?cat=' + cat.id + '" aria-haspopup="true" aria-expanded="false">' +
-        cat.name + C.icon('chevron', 'nav__chev') + '</a></li>';
-    }).join('');
+    var nav = ['oro', 'plata'].map(function (metal) {
+      return '<li class="nav__item" data-grupo="' + metal + '">' +
+        '<a class="nav__link" href="categoria.html?metal=' + metal + '" aria-haspopup="true" aria-expanded="false">' +
+        '<i class="dot dot--' + metal + '"></i>' + C.METALS[metal].label + C.icon('chevron', 'nav__chev') + '</a></li>';
+    }).join('') +
+      '<li class="nav__item"><a class="nav__link" href="personaliza-pulsera.html">Personaliza tu pulsera</a></li>';
 
     return '' +
       '<div class="topbar"><div class="container topbar__inner">' +
@@ -98,40 +99,49 @@
     return '<span class="mega__ico">' + C.jewelSVG(shape, metal || 'plata', { variant: VARIANTS[i % VARIANTS.length], stone: stone }) + '</span>';
   }
 
-  function megaHTML(cat) {
-    var base = 'categoria.html?cat=' + cat.id;
-    var subs = cat.subs.map(function (s, i) {
-      return '<li><a href="' + base + '&sub=' + encodeURIComponent(s) + '">' + miniJewel(cat.shape, i, state.metal) + s + '</a></li>';
-    }).join('');
-    var stones = Object.keys(C.STONES).map(function (k) {
-      return '<li><a href="' + base + '&piedra=' + k + '">' + miniJewel('anillo', 0, 'plata', k) + C.STONES[k] + '</a></li>';
-    }).join('');
-    var metals = '<li><a href="' + base + '&metal=oro"><span class="swatch swatch--oro"></span>Oro 18K</a></li>' +
-      '<li><a href="' + base + '&metal=plata"><span class="swatch swatch--plata"></span>Plata 925</a></li>' +
-      '<li><a href="' + base + '&custom=1"><span class="swatch swatch--dos"></span>Personalizables</a></li>';
-    var prices = C.PRICE_RANGES.slice(0, 3).map(function (r) {
-      return '<li><a href="' + base + '&precio=' + r.id + '">' + r.label + '</a></li>';
-    }).join('');
-    var first = C.PRODUCTS.find(function (p) { return p.cat === cat.id; });
-    var m = first ? C.displayMetal(first, state.metal) : state.metal;
+  /* Piedra sugerida para el ícono según el nombre de la subcategoría */
+  function piedraDe(sub) {
+    return /esmeralda/i.test(sub) ? 'color' : /diamante|compromiso/i.test(sub) ? 'circon' : undefined;
+  }
+  function urlCat(metal, cat, sub) {
+    return 'categoria.html?metal=' + metal + '&cat=' + cat + (sub ? '&sub=' + encodeURIComponent(sub) : '');
+  }
 
-    return '' +
-      '<div class="mega__col"><p class="mega__title">Categoría</p><ul class="mega__list">' + subs + '</ul></div>' +
-      '<div class="mega__col"><p class="mega__title">Piedra</p><ul class="mega__list">' + stones + '</ul></div>' +
-      '<div class="mega__col"><p class="mega__title">Metal</p><ul class="mega__list">' + metals + '</ul>' +
-        '<p class="mega__title mega__label-gap">Precio</p><ul class="mega__list">' + prices + '</ul></div>' +
+  /* Mega menú de un metal: una columna por tipo de joya con sus subcategorías.
+     Los tipos con pocas opciones (cadenas, pulseras, argollas, juegos) se apilan en una sola columna. */
+  function megaHTML(metal) {
+    var cats = C.categoriasDe(metal);
+    var grandes = cats.filter(function (c) { return ['anillos', 'aretes', 'dijes'].indexOf(c.id) > -1; });
+    var chicas = cats.filter(function (c) { return grandes.indexOf(c) < 0; });
+    function bloque(cat) {
+      return '<p class="mega__title"><a href="' + urlCat(metal, cat.id) + '">' + cat.name + '</a></p><ul class="mega__list">' +
+        cat.subs[metal].map(function (s, i) {
+          return '<li><a href="' + urlCat(metal, cat.id, s) + '">' + miniJewel(cat.shape, i, metal, piedraDe(s)) + s + '</a></li>';
+        }).join('') + '</ul>';
+    }
+    /* Si un tipo tiene una sola opción con su mismo nombre (Pulseras → Pulseras), se muestra una vez, como enlace directo */
+    var unica = function (c) { var s = c.subs[metal]; return s.length === 1 && s[0].toLowerCase() === (c.shortName || c.name).toLowerCase(); };
+    var sueltas = chicas.filter(unica);
+    var cols = grandes.map(function (c) { return '<div class="mega__col">' + bloque(c) + '</div>'; });
+    var pila = chicas.filter(function (c) { return !unica(c); }).map(bloque);
+    if (sueltas.length) pila.push('<p class="mega__title">Más joyas</p><ul class="mega__list">' + sueltas.map(function (c, i) {
+      return '<li><a href="' + urlCat(metal, c.id, c.subs[metal][0]) + '">' + miniJewel(c.shape, i, metal) + c.name + '</a></li>';
+    }).join('') + '</ul>');
+    if (pila.length) cols.push('<div class="mega__col">' + pila.join('<div class="mega__label-gap"></div>') + '</div>');
+    var destacado = C.PRODUCTS.find(function (p) { return p.metals[metal] && p.model; }) || C.PRODUCTS.find(function (p) { return p.metals[metal]; });
+    var shape = destacado ? C.getCategory(destacado.cat).shape : 'anillo';
+    return '<div class="mega__grid" style="--cols:' + cols.length + '">' + cols.join('') +
       '<div class="mega__feature">' +
-        '<a class="mega__promo" href="' + base + '">' + C.jewelSVG(cat.shape, m, { variant: first && first.variant, stone: first && first.stone }) + '</a>' +
-        '<a class="mega__more" href="' + base + '">Mira todos los ' + (cat.shortName || cat.name) + ' ' + C.icon('chevron', 'icon--right') + '</a>' +
-        (cat.id === 'pulseras'
-          ? '<a class="link-arrow" href="personaliza-pulsera.html">Personaliza tu pulsera tejida ✦ ' + C.icon('arrow') + '</a></div>'
-          : '<a class="link-arrow" href="disena.html?tipo=' + cat.shape + '">o diseña uno desde cero ' + C.icon('arrow') + '</a></div>');
+        '<a class="mega__promo" href="categoria.html?metal=' + metal + '">' + C.jewelSVG(shape, metal, { variant: destacado && destacado.variant, stone: destacado && destacado.stone }) + '</a>' +
+        '<a class="mega__more" href="categoria.html?metal=' + metal + '">Ver todo en ' + C.METALS[metal].label + ' ' + C.icon('chevron', 'icon--right') + '</a>' +
+        (metal === 'oro' ? '<span class="small muted">' + C.CERTIFICADO + '</span>' : '') +
+        '<a class="link-arrow" href="disena.html">o diseña tu joya desde cero ' + C.icon('arrow') + '</a></div></div>';
   }
 
   function initMegaMenu(root) {
     var mega = root.querySelector('.mega');
     var content = root.querySelector('[data-mega-content]');
-    var items = root.querySelectorAll('.nav__item[data-cat]');
+    var items = root.querySelectorAll('.nav__item[data-grupo]');
     var closeTimer, current = null;
 
     function open(item) {
@@ -139,7 +149,7 @@
       if (current === item) return;
       if (current) close(true);
       current = item;
-      content.innerHTML = megaHTML(C.getCategory(item.dataset.cat));
+      content.innerHTML = megaHTML(item.dataset.grupo);
       mega.hidden = false;
       requestAnimationFrame(function () { mega.classList.add('is-open'); });
       item.classList.add('is-active');
@@ -161,7 +171,7 @@
       item.addEventListener('mouseleave', scheduleClose);
       item.querySelector('.nav__link').addEventListener('focus', function () { open(item); });
     });
-    root.querySelectorAll('.nav__item:not([data-cat])').forEach(function (i) {
+    root.querySelectorAll('.nav__item:not([data-grupo])').forEach(function (i) {
       i.addEventListener('mouseenter', function () { close(); });
     });
     mega.addEventListener('mouseenter', function () { clearTimeout(closeTimer); });
@@ -172,14 +182,24 @@
 
   /* ---------- Menú móvil ---------- */
   function mobileHTML() {
-    var cats = C.CATEGORIES.map(function (cat) {
-      return '<details class="mnav__group"><summary>' + cat.name + C.icon('chevron') + '</summary><ul>' +
-        '<li><a href="categoria.html?cat=' + cat.id + '">Ver todo</a></li>' +
-        (cat.id === 'pulseras' ? '<li><a href="personaliza-pulsera.html"><strong>Personaliza tu pulsera tejida ✦</strong></a></li>' : '') +
-        cat.subs.map(function (s) {
-          return '<li><a href="categoria.html?cat=' + cat.id + '&sub=' + encodeURIComponent(s) + '">' + s + '</a></li>';
-        }).join('') + '</ul></details>';
-    }).join('');
+    var cats = ['oro', 'plata'].map(function (metal) {
+      return '<details class="mnav__group"><summary>' + C.METALS[metal].label + C.icon('chevron') + '</summary><div class="mnav__body">' +
+        '<a class="mnav__todo" href="categoria.html?metal=' + metal + '">Ver todo en ' + C.METALS[metal].label + '</a>' +
+        (function () {
+          var unicas = [];
+          var html = C.categoriasDe(metal).map(function (cat) {
+            var subs = cat.subs[metal];
+            if (subs.length === 1 && subs[0].toLowerCase() === (cat.shortName || cat.name).toLowerCase()) { unicas.push(cat); return ''; }
+            return '<p class="mnav__tipo"><a href="' + urlCat(metal, cat.id) + '">' + cat.name + '</a></p><ul>' +
+              subs.map(function (s) { return '<li><a href="' + urlCat(metal, cat.id, s) + '">' + s + '</a></li>'; }).join('') + '</ul>';
+          }).join('');
+          if (unicas.length) html += '<p class="mnav__tipo">Más joyas</p><ul>' + unicas.map(function (c) {
+            return '<li><a href="' + urlCat(metal, c.id, c.subs[metal][0]) + '">' + c.name + '</a></li>';
+          }).join('') + '</ul>';
+          return html;
+        })() + '</div></details>';
+    }).join('') +
+      '<a class="mnav__link" href="personaliza-pulsera.html">Personaliza tu pulsera tejida</a>';
     return '<div class="sheet sheet--full" data-mobile-nav hidden>' +
       '<div class="sheet__head"><span class="logo__name">CAMELIA</span>' +
       '<button class="icon-btn" data-close aria-label="Cerrar menú">' + C.icon('close') + '</button></div>' +
@@ -438,7 +458,7 @@
 
   /* ---------- Footer ---------- */
   function footerHTML() {
-    var shop = C.CATEGORIES.map(function (c) { return '<li><a href="categoria.html?cat=' + c.id + '">' + (c.shortName || c.name) + '</a></li>'; }).join('');
+    var shop = C.CATEGORIES.filter(function (c) { return c.home !== false; }).map(function (c) { return '<li><a href="categoria.html?cat=' + c.id + '">' + (c.shortName || c.name) + '</a></li>'; }).join('');
     return '<div class="footer__news"><div class="container footer__news-inner">' +
         '<div><h2 class="h3 serif">Tu próximo universo<br>empieza aquí.</h2><p class="muted">Nuevas piezas, ideas y un poco de inspiración.</p></div>' +
         '<form class="newsletter" data-newsletter><label class="label" for="nl-email">Tu correo electrónico</label>' +

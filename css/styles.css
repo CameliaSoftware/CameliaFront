@@ -263,7 +263,10 @@ h1, h2, h3, h4, p { margin: 0; }
   opacity: 0; transform: translateY(-6px); transition: opacity .3s var(--ease), transform .3s var(--ease);
 }
 .mega.is-open { opacity: 1; transform: none; }
-.mega__inner { display: grid; grid-template-columns: 1fr 1fr 1fr 1.6fr; gap: 40px; padding-top: 36px; padding-bottom: 40px; }
+.mega__inner { padding-top: 36px; padding-bottom: 40px; }
+.mega__grid { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)) 1.3fr; gap: 32px; }
+.mega__title a:hover { color: var(--ink); }
+.mega__col:last-of-type { border-right: 0; }
 .mega__col { border-right: 1px solid var(--line); padding-right: 24px; }
 .mega__col .label { margin-bottom: 14px; }
 .mega__label-gap { margin-top: 26px; }
@@ -979,3 +982,11 @@ body.is-dragging-bead { cursor: grabbing; user-select: none; }
   .dir { flex-direction: column; }
   .dir__acc { flex-direction: row; align-items: center; }
 }
+
+/* Menú por metal (Oro / Plata) */
+.nav__link .dot { margin-right: 8px; vertical-align: 1px; }
+.mnav__body { padding: 0 0 18px; }
+.mnav__todo { display: inline-block; margin-bottom: 8px; color: var(--accent) !important; font-weight: 500; }
+.mnav__tipo { margin: 14px 0 6px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.mnav__body ul { padding: 0 !important; gap: 8px !important; }
+.mnav__link { display: block; padding: 20px 0; border-bottom: 1px solid var(--line); font: 400 24px/1.1 var(--serif); color: var(--ink); }

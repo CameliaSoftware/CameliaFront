@@ -37,7 +37,7 @@
 
   /* Categorías en círculo */
   function renderCollections() {
-    document.querySelector('[data-collections]').innerHTML = C.CATEGORIES.map(function (cat, i) {
+    document.querySelector('[data-collections]').innerHTML = C.CATEGORIES.filter(function (c) { return c.home !== false; }).map(function (cat, i) {
       return '<a class="collection reveal" href="categoria.html?cat=' + cat.id + '">' +
         '<span class="collection__img">' + C.jewelSVG(cat.shape, i % 2 ? 'oro' : 'plata', { variant: i === 5 ? 'torcida' : 'clasica' }) + '</span>' +
         '<span>' + (cat.shortName || cat.name) + '</span></a>';

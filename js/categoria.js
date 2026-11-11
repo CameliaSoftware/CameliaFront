@@ -23,7 +23,7 @@
 
   function matches(p, skip) {
     if (skip !== 'cat' && f.cat.length && f.cat.indexOf(p.cat) < 0) return false;
-    if (f.sub && p.sub !== f.sub) return false;
+    if (skip !== 'sub' && f.sub && p.sub !== f.sub) return false;
     if (skip !== 'metal' && f.metal.length && !f.metal.some(function (m) { return p.metals[m]; })) return false;
     if (skip !== 'piedra' && f.piedra.length && f.piedra.indexOf(p.stone) < 0) return false;
     if (skip !== 'precio' && f.precio.length && !f.precio.some(function (id) {
@@ -38,17 +38,34 @@
   function group(title, key, options) {
     return '<div class="filters__group"><span class="label">' + title + '</span>' + options.map(function (o) {
       var count = C.PRODUCTS.filter(function (p) { return matches(p, key) && o.test(p); }).length;
-      var checked = key === 'custom' ? f.custom : f[key].indexOf(o.id) > -1;
+      var checked = key === 'custom' ? f.custom : key === 'sub' ? f.sub === o.id : f[key].indexOf(o.id) > -1;
       return '<label class="check"><input type="checkbox" data-key="' + key + '" value="' + o.id + '"' + (checked ? ' checked' : '') + '>' +
         (o.swatch ? '<span class="swatch swatch--' + o.swatch + '"></span>' : '') + o.label + '<span class="count">' + count + '</span></label>';
     }).join('') + '</div>';
   }
 
+  /* Subcategorías del tipo elegido, según el metal (Oro y Plata tienen listas distintas) */
+  function subGroup() {
+    if (f.cat.length !== 1) return '';
+    var cat = C.getCategory(f.cat[0]);
+    var metales = f.metal.length ? f.metal : ['oro', 'plata'];
+    var subs = [];
+    metales.forEach(function (m) { cat.subs[m].forEach(function (s) { if (subs.indexOf(s) < 0) subs.push(s); }); });
+    if (f.sub && subs.indexOf(f.sub) < 0) subs.push(f.sub);
+    if (subs.length < 2) return '';
+    return group('Categoría', 'sub', subs.map(function (s) {
+      return { id: s, label: s, test: function (p) { return p.sub === s; } };
+    }));
+  }
+
   function renderFilters() {
     document.querySelector('[data-filter-groups]').innerHTML =
-      group('Tipo de joya', 'cat', C.CATEGORIES.map(function (c) {
+      group('Tipo de joya', 'cat', C.CATEGORIES.filter(function (c) {
+        return !f.metal.length || f.metal.some(function (m) { return c.subs[m].length; });
+      }).map(function (c) {
         return { id: c.id, label: c.shortName || c.name, test: function (p) { return p.cat === c.id; } };
       })) +
+      subGroup() +
       group('Metal', 'metal', [
         { id: 'plata', label: 'Plata 925', swatch: 'plata', test: function (p) { return !!p.metals.plata; } },
         { id: 'oro', label: 'Oro 18K', swatch: 'oro', test: function (p) { return !!p.metals.oro; } },
@@ -93,9 +110,13 @@
 
   function renderHead() {
     var cat = f.cat.length === 1 ? C.getCategory(f.cat[0]) : null;
-    var title = f.favoritos ? 'Mis favoritos' : cat ? (f.sub ? f.sub : cat.name) : f.metal.length === 1 ? 'Joyas en ' + C.METALS[f.metal[0]].label : 'Todas las joyas';
+    var metal = f.metal.length === 1 ? C.METALS[f.metal[0]].label : '';
+    var base = f.sub || (cat ? cat.name : '');
+    var title = f.favoritos ? 'Mis favoritos'
+      : base ? base + (metal ? ' en ' + metal : '')
+      : metal ? 'Joyas en ' + metal : 'Todas las joyas';
     document.querySelector('[data-title]').textContent = title;
-    document.querySelector('[data-crumb]').textContent = cat ? cat.name : 'Joyas';
+    document.querySelector('[data-crumb]').textContent = [metal, cat ? cat.name : ''].filter(Boolean).join(' · ') || 'Joyas';
     document.title = title + ' · Camelia';
     if (cat) document.querySelector('[data-design-link]').href = cat.id === 'pulseras' ? 'personaliza-pulsera.html' : 'disena.html?tipo=' + cat.shape;
     var promo = document.querySelector('[data-tj-promo]');
@@ -129,6 +150,7 @@
       var input = e.target, key = input.dataset.key;
       if (!key) return;
       if (key === 'custom') f.custom = input.checked;
+      else if (key === 'sub') f.sub = input.checked ? input.value : '';
       else {
         var i = f[key].indexOf(input.value);
         if (input.checked && i < 0) f[key].push(input.value);
