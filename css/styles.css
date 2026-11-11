@@ -1014,3 +1014,7 @@ body.is-dragging-bead { cursor: grabbing; user-select: none; }
 .combo__img svg { width: 80%; height: 80%; }
 .combo__txt { display: grid; gap: 2px; font-size: 14px; }
 .combo__total { margin: 10px 0 0; font-size: 15px; }
+
+/* Nota bajo la foto principal del producto */
+.gallery__col { min-width: 0; }
+.gallery__nota { margin: 10px 2px 0; font-size: 12px; line-height: 1.5; color: var(--muted); }

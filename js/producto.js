@@ -73,8 +73,11 @@
         '<span class="tag tag--3d gallery__hint">' + C.icon('rotate') + 'Arrastra para girar · pellizca para acercar</span></div>'
       : '<div class="gallery__main gallery__main--foto">' + C.imgFoto(f) +
         '<span class="tag"><i class="dot dot--' + metal + '"></i>' + C.METALS[metal].label + '</span>' + '</div>';
-    return '<div class="gallery__thumbs">' + thumbs + '</div>' + principal;
+    return '<div class="gallery__thumbs">' + thumbs + '</div>' +
+      '<div class="gallery__col">' + principal + NOTA_IMAGEN + '</div>';
   }
+
+  var NOTA_IMAGEN = '<p class="gallery__nota">Imagen de referencia. El color puede variar respecto a la joya física y el tamaño mostrado no corresponde al tamaño real.</p>';
 
   function galleryHTML() {
     var fotos = C.fotosDe(p, metal);
