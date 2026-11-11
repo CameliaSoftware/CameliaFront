@@ -65,13 +65,13 @@
 
   function galeriaFotos(fotos) {
     var thumbs = fotos.map(function (f, i) {
-      return '<button data-foto="' + i + '" aria-pressed="' + (!modo3d && i === fotoSel) + '" aria-label="Foto ' + (i + 1) + '">' + C.imgFoto(f) + '</button>';
+      return '<button data-foto="' + i + '" aria-pressed="' + (!modo3d && i === fotoSel) + '" aria-label="Foto ' + (i + 1) + '">' + C.imgFoto(f, '', true) + '</button>';
     }).join('') + (p.model ? '<button class="thumb3d" data-ver3d aria-pressed="' + modo3d + '">' + C.icon('rotate') + '<span>3D</span></button>' : '');
     var f = fotos[Math.min(fotoSel, fotos.length - 1)];
     var principal = modo3d
       ? '<div class="gallery__main gallery__main--3d" data-slot><span class="tag"><i class="dot dot--' + metal + '"></i>' + C.METALS[metal].label + '</span>' +
         '<span class="tag tag--3d gallery__hint">' + C.icon('rotate') + 'Arrastra para girar · pellizca para acercar</span></div>'
-      : '<div class="gallery__main gallery__main--foto">' + C.imgFoto(f) +
+      : '<div class="gallery__main gallery__main--foto">' + C.imgFoto(f, '', true) +
         '<span class="tag"><i class="dot dot--' + metal + '"></i>' + C.METALS[metal].label + '</span>' + '</div>';
     return '<div class="gallery__thumbs">' + thumbs + '</div>' +
       '<div class="gallery__col">' + principal + NOTA_IMAGEN + '</div>';
@@ -118,7 +118,7 @@
     if (!lista.length) return '';
     return '<div class="field"><span class="label">Combínala con</span><div class="combo">' + lista.map(function (c) {
       var foto = C.fotosDe(c, metal)[0];
-      var img = foto ? C.imgFoto(foto) : C.jewelSVG(C.getCategory(c.cat).shape, metal, { variant: c.variant, stone: c.stone });
+      var img = foto ? C.imgFoto(foto, '', true) : C.jewelSVG(C.getCategory(c.cat).shape, metal, { variant: c.variant, stone: c.stone });
       return '<label class="combo__item"><input type="checkbox" data-extra="' + c.id + '"' + (extras[c.id] ? ' checked' : '') + '>' +
         '<span class="combo__img">' + img + '</span>' +
         '<span class="combo__txt"><strong>Agregar ' + c.name + '</strong><span class="muted small">' + C.formatCOP(c.metals[metal]) +
