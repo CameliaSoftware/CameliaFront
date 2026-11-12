@@ -1145,3 +1145,18 @@ a.combo__item { grid-template-columns: 56px 1fr auto; color: inherit; text-decor
   .ia__comparar { grid-template-columns: 1fr; }
   .ia__comparar img { height: 260px; }
 }
+
+/* ---------- Paquetes de fotos (admin) ---------- */
+.adm__paquetes { margin-bottom: 24px; display: grid; gap: 10px; }
+.adm__paquete { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); cursor: pointer; transition: border-color .2s; }
+.adm__paquete:hover { border-color: var(--accent); }
+.adm__paquete .adm__info { min-width: 0; }
+.adm__paquete-fotos { display: flex; gap: 6px; min-width: 64px; }
+.adm__paquete-fotos img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; background: var(--cream); }
+.adm__galeria--grande { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.adm__galeria--grande .adm__foto img { aspect-ratio: 4 / 3; }
+@media (max-width: 720px) {
+  .adm__paquete { grid-template-columns: 1fr; }
+  .adm__paquete-fotos img { width: 52px; height: 52px; }
+  .adm__galeria--grande { grid-template-columns: 1fr 1fr; }
+}

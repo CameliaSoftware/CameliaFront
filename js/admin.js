@@ -18,12 +18,16 @@
     return Promise.all([
       C.sb.from('productos').select('*, variantes(*), imagenes(*)').order('orden').order('nombre'),
       C.sb.from('precios_metal').select('metal, precio_gramo'),
+      C.sb.from('notas_admin').select('producto_id, nota'),
     ]).then(function (r) {
       if (r[0].error) throw r[0].error;
       joyas = r[0].data;
       joyas.forEach(function (j) { j.imagenes.sort(function (a, b) { return a.orden - b.orden; }); });
       precios = {};
       (r[1].data || []).forEach(function (x) { precios[x.metal] = x.precio_gramo; });
+      var notas = {};
+      (r[2].data || []).forEach(function (x) { notas[x.producto_id] = x.nota; });
+      joyas.forEach(function (j) { j.nota = notas[j.id] || ''; });
     });
   }
 
@@ -63,20 +67,31 @@
   /* ---------- Lista de joyas ---------- */
   function pintarLista() {
     var q = slug(filtro.q);
+    var paquetes = joyas.filter(function (j) { return j.paquete; });
     var lista = joyas.filter(function (j) {
+      if (j.paquete) return false;
       var m = metalesDe(j);
       if (filtro.metal && !m[filtro.metal]) return false;
       return !q || slug(j.nombre + ' ' + j.id + ' ' + (j.subcategoria || '') + ' ' + j.categoria).indexOf(q) > -1;
     });
     raiz.innerHTML =
       '<div class="area__head"><div><span class="label">Administración</span><h1 class="h2">Joyas</h1>' +
-        '<p class="muted small">' + joyas.length + ' joyas · ' + joyas.filter(function (j) { return j.activo && j.estado === 'publicado'; }).length + ' visibles en la tienda</p></div>' +
-        '<div class="adm__acciones"><button class="btn btn--ghost" data-ir="precios">Precio del gramo</button><button class="btn btn--primary" data-nueva>+ Nueva joya</button></div></div>' +
+        '<p class="muted small">' + (joyas.length - paquetes.length) + ' joyas · ' + joyas.filter(function (j) { return j.activo && j.estado === 'publicado'; }).length + ' visibles en la tienda</p></div>' +
+        '<div class="adm__acciones"><button class="btn btn--ghost" data-ir="precios">Precio del gramo</button><button class="btn btn--ghost" data-nuevo-paquete>📦 Nuevo paquete de fotos</button><button class="btn btn--primary" data-nueva>+ Nueva joya</button></div></div>' +
+      (paquetes.length ? '<section class="area__card adm__paquetes"><div class="area__card-head"><h2 class="h4">Paquetes de fotos pendientes (' + paquetes.length + ')</h2>' +
+        '<span class="small muted">Ocultos en la tienda hasta completarlos con precio y descripción</span></div>' + paquetes.map(filaPaquete).join('') + '</section>' : '') +
       '<div class="adm__filtros"><input class="input" type="search" placeholder="Buscar por nombre o categoría…" data-buscar value="' + esc(filtro.q) + '">' +
         '<select class="select" data-filtro-metal>' + op([['', 'Oro y plata'], ['oro', 'Solo oro'], ['plata', 'Solo plata']], filtro.metal) + '</select></div>' +
       '<div class="adm__lista">' + (lista.length ? lista.map(filaJoya).join('') : '<p class="muted">No hay joyas con ese filtro.</p>') + '</div>';
     var b = raiz.querySelector('[data-buscar]');
     if (filtro.q) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
+  }
+
+  function filaPaquete(j) {
+    return '<article class="adm__paquete" data-abrir-paquete="' + esc(j.id) + '">' +
+      '<div class="adm__paquete-fotos">' + (j.imagenes.length ? j.imagenes.slice(0, 5).map(function (f) { return '<img src="' + C.urlFoto(f.archivo) + '" alt="" loading="lazy">'; }).join('') : '<span class="muted small">Sin fotos todavía</span>') + '</div>' +
+      '<div class="adm__info"><strong>' + esc(j.nombre) + '</strong><span class="muted small">' + j.imagenes.length + ' fotos' + (j.nota ? ' · ' + esc(j.nota.slice(0, 90)) + (j.nota.length > 90 ? '…' : '') : '') + '</span></div>' +
+      '<button class="btn btn--ghost btn--sm">Abrir</button></article>';
   }
 
   function filaJoya(j) {
@@ -96,6 +111,76 @@
         '<button class="link-arrow small adm__peligro" data-eliminar="' + esc(j.id) + '">Eliminar</button>' +
       '</div></article>';
   }
+
+  /* ---------- Paquetes de fotos ----------
+     Una joya en borrador con solo fotos y una nota. Después se completa (precio, descripción…) y se publica. */
+  function crearPaquete() {
+    var ahora = new Date();
+    var id = 'paquete-' + ahora.toISOString().slice(0, 16).replace(/[-:T]/g, '') + '-' + Math.random().toString(36).slice(2, 6);
+    var nombre = 'Paquete ' + ahora.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) + ' ' + ahora.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    C.sb.from('productos').insert({ id: id, nombre: nombre, categoria: 'por-definir', estado: 'borrador', activo: false, paquete: true, figura: 'clasica' })
+      .then(function (r) { if (r.error) throw r.error; return cargar(); })
+      .then(function () { ir('paquete', joyas.find(function (x) { return x.id === id; })); })
+      .catch(function (e) { C.avisar('No se pudo crear el paquete: ' + e.message, 'error'); });
+  }
+
+  function pintarPaquete() {
+    var j = editando;
+    var metales = j.variantes.map(function (v) { return v.metal; });
+    var metalSel = metales.length === 2 ? 'ambos' : metales[0] || '';
+    raiz.innerHTML =
+      '<div class="area__head"><div><button class="link-arrow small" data-volver>← Volver a las joyas</button>' +
+        '<span class="label" style="display:block;margin-top:14px">Paquete de fotos</span><h1 class="h2">' + esc(j.nombre) + '</h1>' +
+        '<p class="muted small">Sube las fotos tal como están o mejóralas con IA. El paquete queda oculto en la tienda; después se le pone precio y descripción.</p></div>' +
+        '<button class="link-arrow small adm__peligro" data-eliminar="' + esc(j.id) + '">Eliminar paquete</button></div>' +
+      '<form class="area__card" data-form-paquete novalidate><div class="form-grid">' +
+        C.campo('Nombre provisional', '<input class="input" name="nombre" value="' + esc(j.nombre) + '" placeholder="Ej: Anillo mariposa esmeralda">') +
+        C.campo('Tipo de joya', '<select class="select" name="categoria">' + op([['por-definir', 'No sé todavía']].concat(C.CATEGORIES.map(function (c) { return [c.id, c.name]; })), j.categoria) + '</select>') +
+        C.campo('Metal', '<select class="select" name="metal">' + op([['', 'No sé todavía'], ['oro', 'Oro 18K'], ['plata', 'Plata 925'], ['ambos', 'Oro y plata']], metalSel) + '</select>') +
+      '</div>' +
+      C.campo('Notas para completar la joya <em>(solo las ves tú)</em>', '<textarea class="input" name="nota" rows="4" style="min-height:110px;padding-top:12px" placeholder="Ej: es un juego, se vende el dije o los topos por separado. Costo 80.000, precio que quiero ~180.000. Piedra: circón azul.">' + esc(j.nota) + '</textarea>') +
+      '<div class="form-actions"><button class="btn btn--primary" type="submit">Guardar paquete</button></div></form>' +
+      '<section class="area__card adm__fotos"><div class="area__card-head"><h2 class="h4">Fotos (' + j.imagenes.length + ')</h2><span class="small muted">Se guardan con la marca de agua "Joyería Camelia"</span></div>' +
+        '<label class="adm__drop" data-drop><input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden data-archivos>' +
+          '<strong>Arrastra las fotos aquí o haz clic para elegirlas</strong><span class="small muted">Se suben tal como están · puedes elegir varias a la vez</span></label>' +
+        '<button type="button" class="btn btn--ghost adm__ia" data-ia-abrir>✦ Editar una foto nueva con IA antes de subirla</button>' +
+        '<div class="adm__subida small" data-progreso hidden></div>' +
+        '<div class="adm__galeria adm__galeria--grande">' + j.imagenes.map(fotoHTML).join('') + '</div>' +
+      '</section>';
+  }
+
+  function guardarPaquete(form) {
+    var j = editando;
+    var metal = form.metal.value, quiero = metal === 'ambos' ? ['oro', 'plata'] : metal ? [metal] : [];
+    var faltan = quiero.filter(function (m) { return !j.variantes.some(function (v) { return v.metal === m; }); });
+    var sobran = j.variantes.filter(function (v) { return quiero.indexOf(v.metal) < 0 && !v.precio_fijo && !v.peso_gramos; });
+    Promise.all([
+      C.sb.from('productos').update({ nombre: form.nombre.value.trim() || j.nombre, categoria: form.categoria.value }).eq('id', j.id),
+      C.sb.from('notas_admin').upsert({ producto_id: j.id, nota: form.nota.value.trim(), actualizado: new Date().toISOString() }),
+      faltan.length ? C.sb.from('variantes').insert(faltan.map(function (m) { return { producto_id: j.id, metal: m, ley: m === 'oro' ? 750 : 925, activo: true, stock: 0 }; })) : null,
+      sobran.length ? C.sb.from('variantes').delete().in('id', sobran.map(function (v) { return v.id; })) : null,
+    ]).then(function (r) {
+      r.forEach(function (x) { if (x && x.error) throw x.error; });
+      return cargar();
+    }).then(function () { editando = joyas.find(function (x) { return x.id === j.id; }); pintarPaquete(); C.avisar('Paquete guardado.'); })
+      .catch(function (e) { C.avisar('No se pudo guardar: ' + e.message, 'error'); });
+  }
+
+  /* Mejorar con IA una foto que ya está subida: parte de la original sin marca de agua */
+  function iaFoto(id) {
+    var f = editando.imagenes.find(function (x) { return x.id === id; });
+    if (!f) return;
+    C.avisar('Abriendo la foto…');
+    C.sb.storage.from('originales').download(f.archivo_original || f.archivo).then(function (r) {
+      if (r.error) return fetch(C.urlFoto(f.archivo)).then(function (x) { return x.blob(); });
+      return r.data;
+    }).then(function (blob) {
+      var archivo = new File([blob], 'foto.' + (blob.type === 'image/webp' ? 'webp' : blob.type === 'image/png' ? 'png' : 'jpg'), { type: blob.type || 'image/jpeg' });
+      C.abrirEditorIA(editando, function (nueva) { subir([nueva]); }, archivo);
+    }).catch(function (e) { C.avisar('No se pudo abrir la foto: ' + e.message, 'error'); });
+  }
+
+  function repintar() { if (vista === 'paquete') pintarPaquete(); else pintarEditor(); }
 
   /* ---------- Editor ---------- */
   function vacia() {
@@ -183,6 +268,7 @@
       '<div class="adm__foto-acc">' +
         '<button type="button" class="icon-btn" data-mover="' + f.id + '" data-dir="-1" aria-label="Mover antes"' + (i === 0 ? ' disabled' : '') + '>←</button>' +
         '<button type="button" class="icon-btn" data-mover="' + f.id + '" data-dir="1" aria-label="Mover después"' + (i === editando.imagenes.length - 1 ? ' disabled' : '') + '>→</button>' +
+        '<button type="button" class="link-arrow small" data-ia-foto="' + f.id + '">✦ IA</button>' +
         '<button type="button" class="link-arrow small adm__peligro" data-borrar-foto="' + f.id + '">Borrar</button>' +
       '</div>' + (i === 0 ? '<span class="tag tag--soft adm__principal">Principal</span>' : '') + '</figcaption></figure>';
   }
@@ -371,7 +457,7 @@
     });
     cadena.then(cargar).then(function () {
       editando = joyas.find(function (x) { return x.id === j.id; });
-      pintarEditor();
+      repintar();
       C.avisar(hechos + ' foto' + (hechos === 1 ? '' : 's') + ' subida' + (hechos === 1 ? '' : 's') + ' con marca de agua.', errores.length ? 'error' : null);
       if (errores.length) alert('Algunas fotos no se subieron:\n' + errores.join('\n'));
     });
@@ -385,7 +471,7 @@
       f.archivo_original ? C.sb.storage.from('originales').remove([f.archivo_original]) : null,
     ]).then(function () { return C.sb.from('imagenes').delete().eq('id', id); })
       .then(function (r) { if (r.error) throw r.error; return cargar(); })
-      .then(function () { editando = joyas.find(function (x) { return x.id === editando.id; }); pintarEditor(); C.avisar('Foto borrada.'); })
+      .then(function () { editando = joyas.find(function (x) { return x.id === editando.id; }); repintar(); C.avisar('Foto borrada.'); })
       .catch(function (e) { C.avisar('No se pudo borrar: ' + e.message, 'error'); });
   }
 
@@ -395,7 +481,7 @@
     var t = l[i]; l[i] = l[k]; l[k] = t;
     // Se renumeran todas (1, 2, 3…) para que el orden quede siempre limpio
     Promise.all(l.map(function (f, n) { return f.orden === n + 1 ? null : C.sb.from('imagenes').update({ orden: n + 1 }).eq('id', f.id); }))
-      .then(cargar).then(function () { editando = joyas.find(function (x) { return x.id === editando.id; }); pintarEditor(); });
+      .then(cargar).then(function () { editando = joyas.find(function (x) { return x.id === editando.id; }); repintar(); });
   }
 
   /* ---------- Eliminar y publicar ---------- */
@@ -447,7 +533,7 @@
   /* ---------- Eventos ---------- */
   function ir(v, j) {
     vista = v; editando = j || null;
-    if (v === 'lista') pintarLista(); else if (v === 'precios') pintarPreciosGramo(); else pintarEditor();
+    if (v === 'lista') pintarLista(); else if (v === 'precios') pintarPreciosGramo(); else if (v === 'paquete') pintarPaquete(); else pintarEditor();
     window.scrollTo(0, 0);
   }
 
@@ -458,6 +544,9 @@
       if (b('[data-nueva]')) return ir('editor', vacia());
       if ((el = b('[data-ir]'))) return ir(el.dataset.ir);
       if ((el = b('[data-editar]'))) return ir('editor', joyas.find(function (x) { return x.id === el.dataset.editar; }));
+      if (b('[data-nuevo-paquete]')) return crearPaquete();
+      if ((el = b('[data-abrir-paquete]'))) return ir('paquete', joyas.find(function (x) { return x.id === el.dataset.abrirPaquete; }));
+      if ((el = b('[data-ia-foto]'))) return iaFoto(el.dataset.iaFoto);
       if ((el = b('[data-eliminar]'))) return eliminar(el.dataset.eliminar);
       if ((el = b('[data-alternar]'))) return alternar(el.dataset.alternar);
       if (b('[data-ficha-mas]')) return raiz.querySelector('[data-ficha]').insertAdjacentHTML('beforeend', filaFicha());
@@ -485,6 +574,7 @@
       e.preventDefault();
       if (e.target.matches('[data-form]')) guardar(e.target);
       if (e.target.matches('[data-form-gramo]')) guardarGramo(e.target);
+      if (e.target.matches('[data-form-paquete]')) guardarPaquete(e.target);
     });
     raiz.addEventListener('dragover', function (e) { var d = e.target.closest('[data-drop]'); if (d) { e.preventDefault(); d.classList.add('is-over'); } });
     raiz.addEventListener('dragleave', function (e) { var d = e.target.closest('[data-drop]'); if (d) d.classList.remove('is-over'); });
@@ -505,7 +595,12 @@
       if (!u) return sinPermiso(null);
       return C.sb.rpc('es_admin').then(function (r) {
         if (r.error || !r.data) return sinPermiso(u);
-        return cargar().then(function () { eventos(); ir('lista'); });
+        return cargar().then(function () {
+          eventos();
+          // admin.html#paquete=<id> abre ese paquete directamente
+          var m = location.hash.match(/^#paquete=(.+)$/), p = m && joyas.find(function (x) { return x.id === decodeURIComponent(m[1]); });
+          if (p) ir('paquete', p); else ir('lista');
+        });
       });
     }).catch(function (e) {
       raiz.innerHTML = '<p class="form-error" style="padding:60px 0">No se pudo cargar: ' + esc(e.message) + '</p>';

@@ -155,7 +155,7 @@
   }
 
   /* ---------- Abrir ---------- */
-  C.abrirEditorIA = function (joya, callback) {
+  C.abrirEditorIA = function (joya, callback, archivoInicial) {
     alAprobar = callback; nombreJoya = joya && joya.nombre;
     versiones = []; actual = 0; ocupado = false; gastoSesion = 0;
     modal = document.createElement('div');
@@ -168,7 +168,7 @@
       '<div data-ia-estado></div><div data-ia-cuerpo></div></div>';
     document.body.appendChild(modal);
     document.body.classList.add('no-scroll');
-    pintar();
+    if (archivoInicial) elegir(archivoInicial); else pintar();
 
     // Avisa si falta la clave de OpenAI en el servidor
     api('/api/ia/estado').then(function (j) {
