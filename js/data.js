@@ -42,7 +42,7 @@ CAMELIA.CATEGORIES = [
   } },
   { id: 'dijes', name: 'Dijes', shape: 'dije', subs: {
     oro: ['Dijes', 'Dijes con esmeralda', 'Dijes de letra', 'Cristos', 'Medallas'],
-    plata: ['Dijes con esmeralda'],
+    plata: ['Dijes', 'Dijes con esmeralda'],
   } },
   { id: 'pulseras', name: 'Pulseras', shape: 'pulsera', subs: { oro: ['Pulseras'], plata: ['Pulseras'] } },
   { id: 'argollas', name: 'Argollas de matrimonio', shortName: 'Argollas', shape: 'argolla', subs: { oro: ['Argollas'], plata: [] } },

@@ -117,7 +117,7 @@
   /* Complementos: otra joya que se puede sumar con un clic (ej. la cadena + el dije) */
   var extras = {};
   function complementos() {
-    return (p.complementos || []).map(C.getProduct).filter(function (c) { return c && c.metals[metal]; });
+    return (p.complementos || []).map(C.getProduct).filter(function (c) { return c && C.tieneMetal(c, metal); });
   }
   function complementosHTML() {
     var lista = complementos();
@@ -125,6 +125,10 @@
     return '<div class="field"><span class="label">Combínala con</span><div class="combo">' + lista.map(function (c) {
       var foto = C.fotosDe(c, metal)[0];
       var img = foto ? C.imgFoto(foto, '', true) : C.jewelSVG(C.getCategory(c.cat).shape, metal, { variant: c.variant, stone: c.stone });
+      if (!c.metals[metal]) return '<a class="combo__item" href="producto.html?id=' + c.id + '&metal=' + metal + '">' +
+        '<span class="combo__img">' + img + '</span>' +
+        '<span class="combo__txt"><strong>' + c.name + '</strong><span class="muted small">Precio a consultar</span></span>' +
+        '<span class="link-arrow small">Ver</span></a>';
       return '<label class="combo__item"><input type="checkbox" data-extra="' + c.id + '"' + (extras[c.id] ? ' checked' : '') + '>' +
         '<span class="combo__img">' + img + '</span>' +
         '<span class="combo__txt"><strong>Agregar ' + c.name + '</strong><span class="muted small">' + C.formatCOP(c.metals[metal]) +
