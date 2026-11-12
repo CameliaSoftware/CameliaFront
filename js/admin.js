@@ -148,6 +148,21 @@
     if (paq.blobs[ruta]) return Promise.resolve(paq.blobs[ruta]);
     return C.sb.storage.from('originales').download(ruta).then(function (r) { if (r.error) throw r.error; paq.blobs[ruta] = r.data; return r.data; });
   }
+  /* Referencia reducida (JPEG de máx. 1024 px) para mandarla a la IA: pesa ~10 veces menos */
+  var chicas = {};
+  function achicar(ruta) {
+    if (chicas[ruta]) return Promise.resolve(chicas[ruta]);
+    return bajar(ruta).then(function (b) { return createImageBitmap(b); }).then(function (bmp) {
+      var k = Math.min(1, 1024 / Math.max(bmp.width, bmp.height));
+      var cv = document.createElement('canvas');
+      cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+      var ctx = cv.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(bmp, 0, 0, cv.width, cv.height);
+      return new Promise(function (ok) { cv.toBlob(ok, 'image/jpeg', 0.86); });
+    }).then(function (b) { chicas[ruta] = b; return b; });
+  }
+
   function borrarCarpetaPaquete(id) {
     return Promise.all([listar(carpeta(id, 'ref')), listar(carpeta(id, 'ia'))]).then(function (r) {
       var todas = r[0].concat(r[1]);
@@ -256,13 +271,20 @@
     if (!paq.refs.length || paq.generando[rol]) return;
     paq.generando[rol] = true;
     if (vista === 'paquete') pintarPaquete();
-    Promise.all(paq.refs.slice(0, 8).map(function (r) { return bajar(r.ruta); })).then(function (blobs) {
-      var form = new FormData();
-      blobs.forEach(function (b, i) { form.append('imagenes', b, 'real-' + (i + 1) + (b.type === 'image/webp' ? '.webp' : '.jpg')); });
-      form.append('rol', rol);
-      form.append('calidad', paq.calidad);
-      form.append('extra', paq.extra);
-      return C.iaApi('/api/ia/generar', { method: 'POST', body: form });
+    Promise.all(paq.refs.slice(0, 8).map(function (r) { return achicar(r.ruta); })).then(function (blobs) {
+      var enviar = function () {
+        var form = new FormData();
+        blobs.forEach(function (b, i) { form.append('imagenes', b, 'real-' + (i + 1) + '.jpg'); });
+        form.append('rol', rol);
+        form.append('calidad', paq.calidad);
+        form.append('extra', paq.extra);
+        return C.iaApi('/api/ia/generar', { method: 'POST', body: form });
+      };
+      // Si se cae la conexión (p. ej. el servidor se reinició), se reintenta una vez a los 5 s
+      return enviar().catch(function (e) {
+        if (!/conectar/.test(e.message)) throw e;
+        return new Promise(function (ok) { setTimeout(ok, 5000); }).then(enviar);
+      });
     }).then(function (res) {
       if (res.costoUsd) C.iaGasto(res.costoUsd);
       return fetch(res.imagen).then(function (x) { return x.blob(); });
