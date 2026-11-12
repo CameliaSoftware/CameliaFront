@@ -48,7 +48,7 @@
   var filter = 'todo';
   function renderFeatured() {
     var list = C.PRODUCTS.filter(function (p) { return filter === 'todo' || C.tieneMetal(p, filter); });
-    var picks = ['anillo-orbita', 'aretes-eclipse', 'collar-aura', 'anillo-sol', 'dije-colibri', 'pulsera-hematita', 'solitario-luna', 'argollas-eterna'];
+    var picks = ['anillo-halo-esmeralda', 'dije-cruz-cristo', 'anillo-mariposa-esmeralda', 'pulsera-tejida-raqueta', 'anillo-flor-esmeralda', 'cadena-veneciana', 'anillo-pave-esmeralda', 'pulsera-tejida-letra-v'];
     list.sort(function (a, b) {
       var ia = picks.indexOf(a.id), ib = picks.indexOf(b.id);
       return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);

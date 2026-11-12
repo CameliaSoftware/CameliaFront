@@ -61,61 +61,16 @@ CAMELIA.categoriasDe = function (metal) {
    model (opcional): modelo 3D en GLB que se puede girar en la página del producto.
    detalle (opcional): cámara de la vista "Detalle" del visor 3D (por defecto, la parte baja del collar). */
 CAMELIA.PRODUCTS = [
-  { id: 'anillo-orbita', name: 'Anillo Órbita', cat: 'anillos', sub: 'Anillos', variant: 'organica',
-    desc: 'Acabado espejo', metals: { plata: 189000, oro: 1290000 }, stone: 'ninguna', custom: true },
-  { id: 'anillo-sol', name: 'Anillo Sol', cat: 'anillos', sub: 'Anillos', variant: 'torcida',
-    desc: 'Forma orgánica', metals: { oro: 1290000, plata: 179000 }, stone: 'ninguna', custom: true },
-  { id: 'solitario-luna', name: 'Solitario Luna', cat: 'anillos', sub: 'Anillos de compromiso', variant: 'clasica',
-    desc: 'Circón talla brillante', metals: { oro: 2390000, plata: 259000 }, stone: 'circon', custom: true },
-  { id: 'sello-raiz', name: 'Sello Raíz', cat: 'anillos', sub: 'Anillos caballero', variant: 'sello',
-    desc: 'Grabado a mano', metals: { plata: 239000, oro: 1890000 }, stone: 'ninguna', custom: true },
-  { id: 'anillo-prisma', name: 'Anillo Prisma', cat: 'anillos', sub: 'Anillos', variant: 'geometrica',
-    desc: 'Facetado geométrico', metals: { plata: 219000 }, stone: 'ninguna', custom: false },
-
-  { id: 'aretes-eclipse', name: 'Aretes Eclipse', cat: 'aretes', sub: 'Candongas', variant: 'clasica',
-    desc: 'Pulido brillante', metals: { oro: 890000, plata: 159000 }, stone: 'ninguna', custom: false },
-  { id: 'topos-rocio', name: 'Topos Rocío', cat: 'aretes', sub: 'Topos', variant: 'minimal',
-    desc: 'Perla de agua dulce', metals: { plata: 129000, oro: 590000 }, stone: 'perla', custom: false },
-  { id: 'candongas-marea', name: 'Candongas Marea', cat: 'aretes', sub: 'Candongas', variant: 'torcida',
-    desc: 'Textura ondulada', metals: { plata: 169000 }, stone: 'ninguna', custom: true },
-
-  { id: 'collar-aura', name: 'Collar Aura', cat: 'cadenas', sub: 'Cadenas dama', variant: 'clasica',
-    desc: 'Perla natural', metals: { plata: 249000, oro: 1490000 }, stone: 'perla', custom: false,
-    model: 'models/collar-aura.glb' },
-  { id: 'cadena-rio', name: 'Cadena Río', cat: 'cadenas', sub: 'Cadenas dama', variant: 'minimal',
-    desc: 'Eslabón veneciano 45 cm', metals: { oro: 1190000, plata: 149000 }, stone: 'ninguna', custom: false,
-    model: 'models/cadena-rio.glb' },
   { id: 'cadena-veneciana', name: 'Cadena Veneciana', cat: 'cadenas', sub: 'Cadenas dama', variant: 'minimal',
     desc: 'Tejido veneciano de 60 cm con broche de resorte', metals: { oro: 0 }, peso: { oro: 4.5 }, stone: 'ninguna', custom: false,
     texto: 'Cadena de tejido veneciano (de cajita) en oro 18K, de 60 cm de largo, firme y con brillo parejo, con broche de argolla de resorte. En las fotos se muestra con el Dije Cruz de Cristo, que se vende por separado.',
     complementos: ['dije-cruz-cristo'],
     ficha: [['Metal', 'Oro amarillo 18K (ley 750)'], ['Largo', '60 cm'], ['Tejido', 'Veneciano (de cajita)'], ['Broche', 'Argolla de resorte'], ['Dije', 'No incluido, se vende por separado']] },
-  { id: 'cadena-cauca', name: 'Cadena Cauca', cat: 'cadenas', sub: 'Cadenas caballero', variant: 'clasica',
-    desc: 'Eslabón cubano 50 cm', metals: { plata: 329000 }, stone: 'ninguna', custom: false,
-    model: 'models/cadena-cauca.glb' },
-
   { id: 'dije-cruz-cristo', name: 'Dije Cruz de Cristo', cat: 'dijes', sub: 'Cristos', variant: 'clasica',
     desc: 'Cruz calada con el rostro de Cristo en relieve', metals: { oro: 0 }, peso: { oro: 1 }, stone: 'ninguna', custom: false,
     texto: 'Cruz calada en oro 18K con el rostro de Cristo en relieve y su corona de espinas, en un trabajo de orfebrería muy detallado. La argolla lleva grabada la ley 750. La cadena se vende por separado.',
     complementos: ['cadena-veneciana'],
     ficha: [['Metal', 'Oro amarillo 18K (ley 750)'], ['Piedras', 'Sin piedras'], ['Cadena', 'No incluida, se vende por separado']] },
-  { id: 'dije-colibri', name: 'Dije Colibrí', cat: 'dijes', sub: 'Dijes', variant: 'organica',
-    desc: 'Inspirado en el Caribe', metals: { oro: 690000, plata: 139000 }, stone: 'ninguna', custom: true },
-  { id: 'dije-inicial', name: 'Dije Inicial', cat: 'dijes', sub: 'Dijes de letra', variant: 'sello',
-    desc: 'Tu letra, grabada', metals: { plata: 119000, oro: 520000 }, stone: 'ninguna', custom: true },
-
-  { id: 'pulsera-hematita', name: 'Pulsera Hematita', cat: 'pulseras', sub: 'Pulseras', variant: 'clasica',
-    desc: 'Hematita mate, cordón ajustable y dije V', metals: { oro: 690000, plata: 169000 }, stone: 'color', custom: true,
-    model: 'models/pulsera-hematita.glb', detalle: { orbit: '0deg 85deg 0.045m', target: '-0.014m -0.03m 0m' } },
-  { id: 'pulsera-orilla', name: 'Pulsera Orilla', cat: 'pulseras', sub: 'Pulseras', variant: 'clasica',
-    desc: 'Cierre invisible', metals: { plata: 199000, oro: 1590000 }, stone: 'ninguna', custom: true },
-  { id: 'pulsera-astro', name: 'Pulsera Astro', cat: 'pulseras', sub: 'Pulseras', variant: 'minimal',
-    desc: 'Circones de color', metals: { oro: 980000, plata: 189000 }, stone: 'color', custom: false },
-
-  { id: 'argollas-eterna', name: 'Argollas Eterna', cat: 'argollas', sub: 'Argollas', variant: 'clasica',
-    desc: 'Par · confort fit', metals: { oro: 2890000, plata: 389000 }, stone: 'ninguna', custom: true },
-  { id: 'argollas-dos-mundos', name: 'Argollas Dos Mundos', cat: 'argollas', sub: 'Argollas', variant: 'torcida',
-    desc: 'Par · plata y oro', metals: { oro: 1990000 }, stone: 'ninguna', custom: true },
 ];
 
 CAMELIA.TESTIMONIALS = [
