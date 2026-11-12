@@ -30,26 +30,37 @@
   }
   function usd(n) { return 'US$' + (Math.round(n * 100) / 100).toFixed(2); }
 
-  function token() {
+  var SIN_SESION = 'Se cerró tu sesión. Recarga la página y vuelve a entrar con Google.';
+
+  /* Token de sesión vigente: si le quedan menos de 5 minutos (o forzar), se renueva antes de usarlo */
+  function token(forzar) {
     return C.sb.auth.getSession().then(function (r) {
       var s = r.data && r.data.session;
-      if (!s) throw new Error('Tu sesión venció. Recarga la página y vuelve a entrar.');
-      return s.access_token;
+      if (!s) throw new Error(SIN_SESION);
+      var queda = (s.expires_at || 0) * 1000 - Date.now();
+      if (!forzar && queda > 5 * 60 * 1000) return s.access_token;
+      return C.sb.auth.refreshSession().then(function (x) {
+        var n = x.data && x.data.session;
+        if (!n) throw new Error(SIN_SESION);
+        return n.access_token;
+      });
     });
   }
 
-  function api(ruta, opciones) {
-    return token().then(function (t) {
-      opciones = opciones || {};
-      opciones.headers = Object.assign({ Authorization: 'Bearer ' + t }, opciones.headers || {});
-      return fetch(C.API_URL + ruta, opciones);
+  /* Llamada al servidor. Si responde 401 (token viejo), renueva la sesión y reintenta una vez. */
+  function api(ruta, opciones, reintento) {
+    opciones = opciones || {};
+    return token(reintento).then(function (t) {
+      var o = Object.assign({}, opciones, { headers: Object.assign({}, opciones.headers || {}, { Authorization: 'Bearer ' + t }) });
+      return fetch(C.API_URL + ruta, o).catch(function () {
+        throw new Error('No se pudo conectar con el servidor. Espera unos segundos e intenta de nuevo.');
+      });
     }).then(function (r) {
+      if (r.status === 401 && !reintento) return api(ruta, opciones, true);
       return r.json().catch(function () { return {}; }).then(function (j) {
-        if (!r.ok) throw new Error(j.error || 'El servidor respondió ' + r.status + '.');
+        if (!r.ok) throw new Error(r.status === 401 ? SIN_SESION : (j.error || 'El servidor respondió ' + r.status + '.'));
         return j;
       });
-    }, function (e) {
-      throw new Error(e.message && /sesión/.test(e.message) ? e.message : 'No se pudo conectar con el servidor. Si lleva rato sin usarse, espera unos segundos e intenta de nuevo.');
     });
   }
 
