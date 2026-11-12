@@ -189,12 +189,12 @@
     raiz.innerHTML =
       '<div class="area__head"><div><button class="link-arrow small" data-volver>← Volver a las joyas</button>' +
         '<span class="label" style="display:block;margin-top:14px">Paquete de fotos</span><h1 class="h2">' + esc(j.nombre) + '</h1>' +
-        '<p class="muted small">1. Sube las fotos reales · 2. La IA hace 3 fotos profesionales · 3. Usa las que te gusten (o corrígelas). Todo queda oculto en la tienda hasta completarlo.</p></div>' +
+        '<p class="muted small">1. Sube las fotos reales · 2. Revísalas y dale a "Generar las 3 fotos" · 3. Usa las que te gusten (o corrígelas). Todo queda oculto en la tienda hasta completarlo.</p></div>' +
         '<button class="link-arrow small adm__peligro" data-eliminar="' + esc(j.id) + '">Eliminar paquete</button></div>' +
 
       '<section class="area__card"><div class="area__card-head"><h2 class="h4">1. Fotos reales (' + paq.refs.length + ')</h2><span class="small muted">No se publican: la IA las usa como referencia</span></div>' +
         '<label class="adm__drop" data-drop-ref><input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden data-refs>' +
-          '<strong>Arrastra aquí las fotos de la joya o haz clic para elegirlas</strong><span class="small muted">Varias a la vez · apenas se suban, la IA empieza a hacer las fotos profesionales</span></label>' +
+          '<strong>Arrastra aquí las fotos de la joya o haz clic para elegirlas</strong><span class="small muted">Varias a la vez · revísalas y luego dale a "Generar las 3 fotos"</span></label>' +
         '<div class="adm__subida small" data-progreso-ref hidden></div>' +
         (paq.refs.length ? '<div class="adm__refs">' + paq.refs.map(function (r) {
           return '<figure><img src="' + esc(r.url) + '" alt="" loading="lazy"><button type="button" class="link-arrow small adm__peligro" data-quitar-ref="' + esc(r.ruta) + '">Quitar</button></figure>';
@@ -241,7 +241,7 @@
       '<div class="form-actions"><button class="btn btn--primary" type="submit">Guardar datos</button></div></form>';
   }
 
-  /* Paso 1: subir fotos reales y arrancar la IA */
+  /* Paso 1: subir fotos reales (la IA arranca solo cuando el admin da "Generar las 3 fotos") */
   function subirReferencias(archivos) {
     var j = editando, prog = raiz.querySelector('[data-progreso-ref]');
     var lista = [].slice.call(archivos).filter(function (a) { return /^image\//.test(a.type); });
@@ -260,7 +260,7 @@
     });
     cadena.then(cargarArchivosPaquete).then(function () {
       if (errores.length) alert('Algunas fotos no se subieron:\n' + errores.join('\n'));
-      if (paq.refs.length) generarTodas();
+      if (paq.refs.length) C.avisar('Fotos subidas. Revísalas y, cuando estén bien, dale a "Generar las 3 fotos".');
     });
   }
 
