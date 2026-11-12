@@ -154,6 +154,10 @@
     document.body.classList.remove('no-scroll');
   }
 
+  /* Para otras partes del panel (paquetes de fotos) */
+  C.iaApi = api;
+  C.iaGasto = function (n) { gastoTotal(n); };
+
   /* ---------- Abrir ---------- */
   C.abrirEditorIA = function (joya, callback, archivoInicial) {
     alAprobar = callback; nombreJoya = joya && joya.nombre;

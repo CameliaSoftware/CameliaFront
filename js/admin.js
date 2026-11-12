@@ -124,29 +124,180 @@
       .catch(function (e) { C.avisar('No se pudo crear el paquete: ' + e.message, 'error'); });
   }
 
+  /* Archivos del paquete en el bucket privado "originales":
+     paquetes/<id>/ref/…  fotos reales (referencia, no se publican)
+     paquetes/<id>/ia/<rol>-<fecha>.png  propuestas de la IA pendientes de aprobar */
+  var ROLES_IA = [['principal', 'Fotografía principal'], ['detalle', 'Fotografía de detalle'], ['premium', 'Presentación premium']];
+  var paq = { id: null, refs: [], propuestas: [], generando: {}, calidad: 'medium', extra: '', blobs: {} };
+
+  function carpeta(id, sub) { return 'paquetes/' + id + '/' + sub; }
+  function listar(ruta) {
+    return C.sb.storage.from('originales').list(ruta, { limit: 100, sortBy: { column: 'name', order: 'asc' } }).then(function (r) {
+      if (r.error) throw r.error;
+      return (r.data || []).filter(function (f) { return f.name && f.name[0] !== '.'; }).map(function (f) { return ruta + '/' + f.name; });
+    });
+  }
+  function firmar(rutas) {
+    if (!rutas.length) return Promise.resolve([]);
+    return C.sb.storage.from('originales').createSignedUrls(rutas, 3600).then(function (r) {
+      if (r.error) throw r.error;
+      return r.data.map(function (x) { return { ruta: x.path, url: x.signedUrl }; });
+    });
+  }
+  function bajar(ruta) {
+    if (paq.blobs[ruta]) return Promise.resolve(paq.blobs[ruta]);
+    return C.sb.storage.from('originales').download(ruta).then(function (r) { if (r.error) throw r.error; paq.blobs[ruta] = r.data; return r.data; });
+  }
+  function borrarCarpetaPaquete(id) {
+    return Promise.all([listar(carpeta(id, 'ref')), listar(carpeta(id, 'ia'))]).then(function (r) {
+      var todas = r[0].concat(r[1]);
+      return todas.length ? C.sb.storage.from('originales').remove(todas) : null;
+    }).catch(function () {});
+  }
+  function cargarArchivosPaquete() {
+    var id = editando.id;
+    if (paq.id !== id) paq = { id: id, refs: [], propuestas: [], generando: {}, calidad: paq.calidad, extra: '', blobs: {} };
+    return Promise.all([listar(carpeta(id, 'ref')).then(firmar), listar(carpeta(id, 'ia')).then(firmar)]).then(function (r) {
+      if (paq.id !== id) return;
+      paq.refs = r[0];
+      paq.propuestas = r[1].map(function (x) { x.rol = x.ruta.split('/').pop().split('-')[0]; return x; }).reverse();
+      if (vista === 'paquete') pintarPaquete();
+    }).catch(function (e) { C.avisar('No se pudieron cargar las fotos del paquete: ' + e.message, 'error'); });
+  }
+
   function pintarPaquete() {
     var j = editando;
+    if (paq.id !== j.id) { paq.id = null; cargarArchivosPaquete(); }
     var metales = j.variantes.map(function (v) { return v.metal; });
     var metalSel = metales.length === 2 ? 'ambos' : metales[0] || '';
+    var hayGen = Object.keys(paq.generando).some(function (k) { return paq.generando[k]; });
     raiz.innerHTML =
       '<div class="area__head"><div><button class="link-arrow small" data-volver>← Volver a las joyas</button>' +
         '<span class="label" style="display:block;margin-top:14px">Paquete de fotos</span><h1 class="h2">' + esc(j.nombre) + '</h1>' +
-        '<p class="muted small">Sube las fotos tal como están o mejóralas con IA. El paquete queda oculto en la tienda; después se le pone precio y descripción.</p></div>' +
+        '<p class="muted small">1. Sube las fotos reales · 2. La IA hace 3 fotos profesionales · 3. Usa las que te gusten (o corrígelas). Todo queda oculto en la tienda hasta completarlo.</p></div>' +
         '<button class="link-arrow small adm__peligro" data-eliminar="' + esc(j.id) + '">Eliminar paquete</button></div>' +
-      '<form class="area__card" data-form-paquete novalidate><div class="form-grid">' +
+
+      '<section class="area__card"><div class="area__card-head"><h2 class="h4">1. Fotos reales (' + paq.refs.length + ')</h2><span class="small muted">No se publican: la IA las usa como referencia</span></div>' +
+        '<label class="adm__drop" data-drop-ref><input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden data-refs>' +
+          '<strong>Arrastra aquí las fotos de la joya o haz clic para elegirlas</strong><span class="small muted">Varias a la vez · apenas se suban, la IA empieza a hacer las fotos profesionales</span></label>' +
+        '<div class="adm__subida small" data-progreso-ref hidden></div>' +
+        (paq.refs.length ? '<div class="adm__refs">' + paq.refs.map(function (r) {
+          return '<figure><img src="' + esc(r.url) + '" alt="" loading="lazy"><button type="button" class="link-arrow small adm__peligro" data-quitar-ref="' + esc(r.ruta) + '">Quitar</button></figure>';
+        }).join('') + '</div>' : '') +
+      '</section>' +
+
+      '<section class="area__card"><div class="area__card-head"><h2 class="h4">2. Fotos profesionales con IA</h2><span class="small muted">Prompt de fotografía de joyería · formato cuadrado</span></div>' +
+        '<div class="adm__gen-ctrl">' +
+          '<input class="input" data-paq-extra placeholder="Indicación extra (opcional): ej. convertir el metal a plata, fondo satén" value="' + esc(paq.extra) + '">' +
+          '<select class="select" data-paq-calidad>' + op([['low', 'Calidad rápida'], ['medium', 'Calidad normal'], ['high', 'Calidad alta']], paq.calidad) + '</select>' +
+          '<button type="button" class="btn btn--primary" data-generar-todas' + (!paq.refs.length || hayGen ? ' disabled' : '') + '>✦ Generar las 3 fotos</button>' +
+        '</div>' +
+        '<div class="adm__propuestas">' +
+          ROLES_IA.filter(function (r) { return paq.generando[r[0]]; }).map(function (r) {
+            return '<figure class="adm__propuesta is-cargando"><div class="adm__propuesta-img"><span class="ia__spinner"></span><span class="small">Haciendo la ' + r[1].toLowerCase() + '… (hasta 1 minuto)</span></div><figcaption><strong class="small">' + r[1] + '</strong></figcaption></figure>';
+          }).join('') +
+          paq.propuestas.map(function (x) {
+            var nom = (ROLES_IA.find(function (r) { return r[0] === x.rol; }) || [0, 'Propuesta'])[1];
+            return '<figure class="adm__propuesta"><a class="adm__propuesta-img" href="' + esc(x.url) + '" target="_blank"><img src="' + esc(x.url) + '" alt="' + esc(nom) + '"></a>' +
+              '<figcaption><strong class="small">' + nom + '</strong><div class="adm__propuesta-btns">' +
+                '<button type="button" class="btn btn--primary btn--sm" data-usar-prop="' + esc(x.ruta) + '">Usar</button>' +
+                '<button type="button" class="btn btn--ghost btn--sm" data-corregir-prop="' + esc(x.ruta) + '">✦ Corregir</button>' +
+                '<button type="button" class="link-arrow small" data-rehacer="' + esc(x.rol) + '"' + (hayGen ? ' disabled' : '') + '>Rehacer</button>' +
+                '<button type="button" class="link-arrow small adm__peligro" data-descartar-prop="' + esc(x.ruta) + '">Descartar</button>' +
+              '</div></figcaption></figure>';
+          }).join('') +
+          (!paq.propuestas.length && !hayGen ? '<p class="muted small">' + (paq.refs.length ? 'No hay propuestas pendientes. Dale a "Generar las 3 fotos" para hacer nuevas.' : 'Cuando subas las fotos reales, aquí aparecen las propuestas de la IA.') + '</p>' : '') +
+        '</div>' +
+      '</section>' +
+
+      '<section class="area__card adm__fotos"><div class="area__card-head"><h2 class="h4">3. Fotos de la joya (' + j.imagenes.length + ')</h2><span class="small muted">Estas son las que se publicarán, con la marca de agua "Joyería Camelia"</span></div>' +
+        '<div class="adm__subida small" data-progreso hidden></div>' +
+        (j.imagenes.length ? '<div class="adm__galeria adm__galeria--grande">' + j.imagenes.map(fotoHTML).join('') + '</div>' : '<p class="muted small">Todavía no hay fotos. Toca "Usar" en una propuesta de la IA.</p>') +
+        '<label class="adm__drop adm__drop--chico" data-drop><input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden data-archivos>' +
+          '<span class="small"><strong>Subir una foto directamente</strong> (sin IA)</span></label>' +
+      '</section>' +
+
+      '<form class="area__card" data-form-paquete novalidate><div class="area__card-head"><h2 class="h4">Datos para completar la joya</h2><span class="small muted">Opcional · solo los ves tú</span></div><div class="form-grid">' +
         C.campo('Nombre provisional', '<input class="input" name="nombre" value="' + esc(j.nombre) + '" placeholder="Ej: Anillo mariposa esmeralda">') +
         C.campo('Tipo de joya', '<select class="select" name="categoria">' + op([['por-definir', 'No sé todavía']].concat(C.CATEGORIES.map(function (c) { return [c.id, c.name]; })), j.categoria) + '</select>') +
         C.campo('Metal', '<select class="select" name="metal">' + op([['', 'No sé todavía'], ['oro', 'Oro 18K'], ['plata', 'Plata 925'], ['ambos', 'Oro y plata']], metalSel) + '</select>') +
       '</div>' +
-      C.campo('Notas para completar la joya <em>(solo las ves tú)</em>', '<textarea class="input" name="nota" rows="4" style="min-height:110px;padding-top:12px" placeholder="Ej: es un juego, se vende el dije o los topos por separado. Costo 80.000, precio que quiero ~180.000. Piedra: circón azul.">' + esc(j.nota) + '</textarea>') +
-      '<div class="form-actions"><button class="btn btn--primary" type="submit">Guardar paquete</button></div></form>' +
-      '<section class="area__card adm__fotos"><div class="area__card-head"><h2 class="h4">Fotos (' + j.imagenes.length + ')</h2><span class="small muted">Se guardan con la marca de agua "Joyería Camelia"</span></div>' +
-        '<label class="adm__drop" data-drop><input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden data-archivos>' +
-          '<strong>Arrastra las fotos aquí o haz clic para elegirlas</strong><span class="small muted">Se suben tal como están · puedes elegir varias a la vez</span></label>' +
-        '<button type="button" class="btn btn--ghost adm__ia" data-ia-abrir>✦ Editar una foto nueva con IA antes de subirla</button>' +
-        '<div class="adm__subida small" data-progreso hidden></div>' +
-        '<div class="adm__galeria adm__galeria--grande">' + j.imagenes.map(fotoHTML).join('') + '</div>' +
-      '</section>';
+      C.campo('Notas para completar la joya', '<textarea class="input" name="nota" rows="4" style="min-height:110px;padding-top:12px" placeholder="Ej: es un juego, se vende el dije o los topos por separado. Costo 80.000, precio que quiero ~180.000. Piedra: circón azul.">' + esc(j.nota) + '</textarea>') +
+      '<div class="form-actions"><button class="btn btn--primary" type="submit">Guardar datos</button></div></form>';
+  }
+
+  /* Paso 1: subir fotos reales y arrancar la IA */
+  function subirReferencias(archivos) {
+    var j = editando, prog = raiz.querySelector('[data-progreso-ref]');
+    var lista = [].slice.call(archivos).filter(function (a) { return /^image\//.test(a.type); });
+    if (!lista.length) return;
+    prog.hidden = false;
+    var cadena = Promise.resolve(), errores = [];
+    lista.forEach(function (a, i) {
+      cadena = cadena.then(function () {
+        prog.textContent = 'Subiendo foto ' + (i + 1) + ' de ' + lista.length + '…';
+        return procesar(a).then(function (r) {
+          var ruta = carpeta(j.id, 'ref') + '/' + crypto.randomUUID() + (r.original.type === 'image/webp' ? '.webp' : '.jpg');
+          paq.blobs[ruta] = r.original;
+          return C.sb.storage.from('originales').upload(ruta, r.original, { contentType: r.original.type }).then(function (x) { if (x.error) throw x.error; });
+        }).catch(function (e) { errores.push(e.message); });
+      });
+    });
+    cadena.then(cargarArchivosPaquete).then(function () {
+      if (errores.length) alert('Algunas fotos no se subieron:\n' + errores.join('\n'));
+      if (paq.refs.length) generarTodas();
+    });
+  }
+
+  /* Paso 2: la IA hace la foto principal, la de detalle y la premium (en paralelo) */
+  function generarTodas() { ROLES_IA.forEach(function (r) { generar(r[0]); }); }
+  function generar(rol) {
+    var id = editando.id;
+    if (!paq.refs.length || paq.generando[rol]) return;
+    paq.generando[rol] = true;
+    if (vista === 'paquete') pintarPaquete();
+    Promise.all(paq.refs.slice(0, 8).map(function (r) { return bajar(r.ruta); })).then(function (blobs) {
+      var form = new FormData();
+      blobs.forEach(function (b, i) { form.append('imagenes', b, 'real-' + (i + 1) + (b.type === 'image/webp' ? '.webp' : '.jpg')); });
+      form.append('rol', rol);
+      form.append('calidad', paq.calidad);
+      form.append('extra', paq.extra);
+      return C.iaApi('/api/ia/generar', { method: 'POST', body: form });
+    }).then(function (res) {
+      if (res.costoUsd) C.iaGasto(res.costoUsd);
+      return fetch(res.imagen).then(function (x) { return x.blob(); });
+    }).then(function (blob) {
+      var ruta = carpeta(id, 'ia') + '/' + rol + '-' + Date.now() + '.png';
+      paq.blobs[ruta] = blob;
+      return C.sb.storage.from('originales').upload(ruta, blob, { contentType: 'image/png' }).then(function (x) { if (x.error) throw x.error; });
+    }).catch(function (e) {
+      C.avisar((ROLES_IA.find(function (r) { return r[0] === rol; }) || [0, 'Foto'])[1] + ': ' + e.message, 'error');
+    }).then(function () {
+      if (paq.id === id) paq.generando[rol] = false;
+      return cargarArchivosPaquete();
+    });
+  }
+
+  /* Paso 3: usar, corregir o descartar una propuesta */
+  function usarPropuesta(ruta, corregida) {
+    var x = paq.propuestas.find(function (p) { return p.ruta === ruta; });
+    (corregida ? Promise.resolve(corregida) : bajar(ruta).then(function (b) { return new File([b], (x ? x.rol : 'ia') + '.png', { type: 'image/png' }); }))
+      .then(function (archivo) { return subir([archivo]); })
+      .then(function (hechos) { if (!hechos) throw new Error('la foto no se subió'); return C.sb.storage.from('originales').remove([ruta]); })
+      .then(cargarArchivosPaquete)
+      .catch(function (e) { C.avisar('No se pudo usar la foto: ' + e.message, 'error'); });
+  }
+  function corregirPropuesta(ruta) {
+    bajar(ruta).then(function (b) {
+      C.abrirEditorIA(editando, function (archivo) { usarPropuesta(ruta, archivo); }, new File([b], 'propuesta.png', { type: 'image/png' }));
+    }).catch(function (e) { C.avisar('No se pudo abrir la foto: ' + e.message, 'error'); });
+  }
+  function borrarArchivo(ruta, aviso) {
+    C.sb.storage.from('originales').remove([ruta]).then(function (r) {
+      if (r.error) throw r.error;
+      delete paq.blobs[ruta];
+      return cargarArchivosPaquete();
+    }).then(function () { C.avisar(aviso); }).catch(function (e) { C.avisar('No se pudo borrar: ' + e.message, 'error'); });
   }
 
   function guardarPaquete(form) {
@@ -425,15 +576,15 @@
   function subir(archivos) {
     var j = editando, prog = raiz.querySelector('[data-progreso]');
     var lista = [].slice.call(archivos).filter(function (a) { return /^image\//.test(a.type); });
-    if (!lista.length) return;
-    prog.hidden = false;
+    if (!lista.length) return Promise.resolve();
+    if (prog) prog.hidden = false;
     var hechos = 0, errores = [];
     var orden = j.imagenes.reduce(function (n, f) { return Math.max(n, f.orden); }, 0);
     var tipoInicial = j.imagenes.length ? 'detalle' : 'producto';
     var cadena = Promise.resolve();
     lista.forEach(function (a, i) {
       cadena = cadena.then(function () {
-        prog.textContent = 'Subiendo foto ' + (i + 1) + ' de ' + lista.length + '…';
+        if (prog) prog.textContent = 'Subiendo foto ' + (i + 1) + ' de ' + lista.length + '…';
         return procesar(a).then(function (r) {
           var ext = r.marcada.type === 'image/webp' ? '.webp' : '.jpg';
           var nombre = crypto.randomUUID() + ext;
@@ -455,11 +606,12 @@
         }).catch(function (e) { errores.push(e.message); });
       });
     });
-    cadena.then(cargar).then(function () {
+    return cadena.then(cargar).then(function () {
       editando = joyas.find(function (x) { return x.id === j.id; });
       repintar();
       C.avisar(hechos + ' foto' + (hechos === 1 ? '' : 's') + ' subida' + (hechos === 1 ? '' : 's') + ' con marca de agua.', errores.length ? 'error' : null);
       if (errores.length) alert('Algunas fotos no se subieron:\n' + errores.join('\n'));
+      return hechos;
     });
   }
 
@@ -493,6 +645,7 @@
     Promise.all([
       pub.length ? C.sb.storage.from('joyas').remove(pub) : null,
       orig.length ? C.sb.storage.from('originales').remove(orig) : null,
+      j.paquete ? borrarCarpetaPaquete(id) : null,
     ]).then(function () { return C.sb.from('productos').delete().eq('id', id); })
       .then(function (r) { if (r.error) throw r.error; return cargar(); })
       .then(function () { pintarLista(); C.avisar('"' + j.nombre + '" eliminada.'); })
@@ -547,6 +700,12 @@
       if (b('[data-nuevo-paquete]')) return crearPaquete();
       if ((el = b('[data-abrir-paquete]'))) return ir('paquete', joyas.find(function (x) { return x.id === el.dataset.abrirPaquete; }));
       if ((el = b('[data-ia-foto]'))) return iaFoto(el.dataset.iaFoto);
+      if (b('[data-generar-todas]')) return generarTodas();
+      if ((el = b('[data-rehacer]'))) return generar(el.dataset.rehacer);
+      if ((el = b('[data-usar-prop]'))) { el.disabled = true; el.textContent = 'Subiendo…'; return usarPropuesta(el.dataset.usarProp); }
+      if ((el = b('[data-corregir-prop]'))) return corregirPropuesta(el.dataset.corregirProp);
+      if ((el = b('[data-descartar-prop]'))) return confirm('¿Descartar esta propuesta?') && borrarArchivo(el.dataset.descartarProp, 'Propuesta descartada.');
+      if ((el = b('[data-quitar-ref]'))) return confirm('¿Quitar esta foto de referencia?') && borrarArchivo(el.dataset.quitarRef, 'Foto quitada.');
       if ((el = b('[data-eliminar]'))) return eliminar(el.dataset.eliminar);
       if ((el = b('[data-alternar]'))) return alternar(el.dataset.alternar);
       if (b('[data-ficha-mas]')) return raiz.querySelector('[data-ficha]').insertAdjacentHTML('beforeend', filaFicha());
@@ -558,12 +717,15 @@
     raiz.addEventListener('input', function (e) {
       if (e.target.matches('[data-buscar]')) { filtro.q = e.target.value; pintarLista(); }
       if (e.target.closest('[data-form]')) pintarPrecios();
+      if (e.target.matches('[data-paq-extra]')) paq.extra = e.target.value;
     });
     raiz.addEventListener('change', function (e) {
       var t = e.target;
       if (t.matches('[data-filtro-metal]')) { filtro.metal = t.value; pintarLista(); }
       if (t.matches('[name=categoria]') || t.matches('[data-metal-on]')) { pintarSubs(); pintarPrecios(); }
       if (t.matches('[data-archivos]')) { subir(t.files); t.value = ''; }
+      if (t.matches('[data-refs]')) { subirReferencias(t.files); t.value = ''; }
+      if (t.matches('[data-paq-calidad]')) paq.calidad = t.value;
       if (t.matches('[data-foto-tipo]')) {
         C.sb.from('imagenes').update({ tipo: t.value }).eq('id', t.dataset.fotoTipo).then(function (r) {
           C.avisar(r.error ? 'No se pudo cambiar: ' + r.error.message : 'Tipo de foto actualizado.', r.error ? 'error' : null);
@@ -576,9 +738,11 @@
       if (e.target.matches('[data-form-gramo]')) guardarGramo(e.target);
       if (e.target.matches('[data-form-paquete]')) guardarPaquete(e.target);
     });
-    raiz.addEventListener('dragover', function (e) { var d = e.target.closest('[data-drop]'); if (d) { e.preventDefault(); d.classList.add('is-over'); } });
-    raiz.addEventListener('dragleave', function (e) { var d = e.target.closest('[data-drop]'); if (d) d.classList.remove('is-over'); });
+    raiz.addEventListener('dragover', function (e) { var d = e.target.closest('[data-drop], [data-drop-ref]'); if (d) { e.preventDefault(); d.classList.add('is-over'); } });
+    raiz.addEventListener('dragleave', function (e) { var d = e.target.closest('[data-drop], [data-drop-ref]'); if (d) d.classList.remove('is-over'); });
     raiz.addEventListener('drop', function (e) {
+      var r = e.target.closest('[data-drop-ref]');
+      if (r) { e.preventDefault(); r.classList.remove('is-over'); return subirReferencias(e.dataTransfer.files); }
       var d = e.target.closest('[data-drop]');
       if (!d) return;
       e.preventDefault(); d.classList.remove('is-over');

@@ -1160,3 +1160,20 @@ a.combo__item { grid-template-columns: 56px 1fr auto; color: inherit; text-decor
   .adm__paquete-fotos img { width: 52px; height: 52px; }
   .adm__galeria--grande { grid-template-columns: 1fr 1fr; }
 }
+.adm__refs { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 14px; }
+.adm__refs figure { margin: 0; display: grid; gap: 4px; justify-items: center; }
+.adm__refs img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; background: var(--cream); }
+.adm__gen-ctrl { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; margin-bottom: 16px; }
+.adm__gen-ctrl .select { width: auto; }
+.adm__propuestas { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.adm__propuesta { margin: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--bg); }
+.adm__propuesta-img { display: grid; place-items: center; aspect-ratio: 1; background: var(--cream); }
+.adm__propuesta-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.adm__propuesta.is-cargando .adm__propuesta-img { gap: 12px; align-content: center; padding: 16px; text-align: center; }
+.adm__propuesta figcaption { display: grid; gap: 8px; padding: 10px 12px 12px; }
+.adm__propuesta-btns { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.adm__drop--chico { margin-top: 14px; padding: 14px; }
+@media (max-width: 720px) {
+  .adm__gen-ctrl { grid-template-columns: 1fr; }
+  .adm__propuestas { grid-template-columns: 1fr; }
+}
