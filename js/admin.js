@@ -162,6 +162,7 @@
         (j.nueva ? '<p class="muted small">Primero crea la joya; después podrás subir sus fotos aquí.</p>' :
         '<label class="adm__drop" data-drop><input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden data-archivos>' +
           '<strong>Arrastra las fotos aquí o haz clic para elegirlas</strong><span class="small muted">JPG, PNG o WebP · puedes elegir varias a la vez</span></label>' +
+        '<button type="button" class="btn btn--ghost adm__ia" data-ia-abrir>✦ Editar una foto con IA antes de subirla</button>' +
         '<div class="adm__subida small" data-progreso hidden></div>' +
         '<div class="adm__galeria">' + j.imagenes.map(fotoHTML).join('') + '</div>') +
       '</section>';
@@ -463,6 +464,7 @@
       if ((el = b('[data-ficha-quitar]'))) return el.closest('.adm__ficha-fila').remove();
       if ((el = b('[data-borrar-foto]'))) return borrarFoto(el.dataset.borrarFoto);
       if ((el = b('[data-mover]'))) return moverFoto(el.dataset.mover, +el.dataset.dir);
+      if (b('[data-ia-abrir]')) return C.abrirEditorIA(editando, function (archivo) { subir([archivo]); });
     });
     raiz.addEventListener('input', function (e) {
       if (e.target.matches('[data-buscar]')) { filtro.q = e.target.value; pintarLista(); }
