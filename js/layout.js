@@ -432,7 +432,7 @@
     if (!S || !window.fetch) return listo(false);
     var limite = setTimeout(function () { listo(false); }, 6000);
     var h = { headers: { apikey: S.key } };
-    var campos = '*,variantes(metal,peso_gramos,precio_fijo,costo_hechura,largo_cm,activo),imagenes(archivo,metal,orden,origen,tipo,alt,descripcion)';
+    var campos = '*,variantes(metal,peso_gramos,precio_fijo,costo_hechura,largo_cm,activo),imagenes(archivo,metal,orden,origen,tipo,alt,descripcion,ancho,alto)';
     var json = function (r) { if (!r.ok) throw new Error(r.status); return r.json(); };
     Promise.all([
       fetch(S.url + '/rest/v1/productos?select=' + encodeURIComponent(campos) + '&activo=eq.true&estado=eq.publicado&order=orden.asc,nombre.asc', h).then(json),

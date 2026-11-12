@@ -14,18 +14,16 @@
   <header id="site-header"></header>
 
   <main>
-    <!-- 1. Inicio: diseña tu joya (configurador) -->
-    <section class="studio-hero" id="disena" aria-label="Diseña tu joya">
-      <div class="container">
-        <div class="studio-hero__head">
-          <p class="label">Dos metales, un universo</p>
-          <h1 class="h1">Diseña la joya que <span class="accent">solo tú</span> imaginas.</h1>
-          <p class="lead">Plata 925 y oro 18K, creadas en 3D, a un precio que no esperas. Elige cada detalle o cuéntale tu idea a la IA.</p>
-          <ol class="studio-hero__steps"><li><span>01</span>Imagina</li><li><span>02</span>Personaliza</li><li><span>03</span>Hazla tuya</li></ol>
+    <!-- 1. Inicio: carrusel con las joyas de la tienda -->
+    <section class="hero-carrusel" aria-label="Joyas destacadas" aria-roledescription="carrusel">
+      <h1 class="sr-only">Camelia · Joyería colombiana en plata 925 y oro 18K</h1>
+      <div class="hero-carrusel__pista" data-carrusel></div>
+      <div class="container hero-carrusel__ctrl">
+        <div class="hero-carrusel__puntos" data-puntos></div>
+        <div class="hero-carrusel__flechas">
+          <button class="hero-carrusel__flecha" data-prev aria-label="Joya anterior"></button>
+          <button class="hero-carrusel__flecha" data-next aria-label="Joya siguiente"></button>
         </div>
-        <div data-studio></div>
-        <p class="studio-hero__alt">¿Prefieres algo listo? <a class="link-arrow" href="#coleccion">Ver la colección</a>
-          <span aria-hidden="true">·</span> ¿Buscas una pulsera tejida? <a class="link-arrow" href="personaliza-pulsera.html">Personalízala con balines de oro 18K</a></p>
       </div>
     </section>
 
@@ -146,7 +144,6 @@
   <script src="js/layout.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
   <script src="js/auth.js"></script>
-  <script src="js/configurator.js"></script>
   <script src="js/home.js"></script>
 </body>
 </html>

@@ -44,15 +44,76 @@
     }).join('');
   }
 
+  /* Joyas que salen primero (en el carrusel y en la colección destacada) */
+  var picks = ['juego-flor-azul', 'anillo-mariposa-oro-esmeralda', 'anillo-aura-esmeralda', 'dije-cruz-cristo', 'topos-virgen-verde', 'anillo-riviera-esmeralda', 'pulsera-tejida-raqueta', 'anillo-duo-esmeralda-azul', 'cadena-veneciana', 'anillo-cruzado-esmeralda', 'pulsera-tejida-letra-v'];
+  function ordenDestacado(a, b) {
+    var ia = picks.indexOf(a.id), ib = picks.indexOf(b.id);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  }
+
+  /* Carrusel de inicio: una joya por diapositiva, pasa sola y se puede deslizar */
+  function initCarrusel() {
+    var pista = document.querySelector('[data-carrusel]');
+    var puntos = document.querySelector('[data-puntos]');
+    var root = pista.closest('.hero-carrusel');
+    var lista = C.PRODUCTS.filter(function (p) { return p.fotos && p.fotos.length; }).sort(ordenDestacado).slice(0, 8);
+    if (!lista.length) { root.hidden = true; return; }
+    pista.innerHTML = lista.map(function (p, n) {
+      var m = C.displayMetal(p, C.state.metal);
+      var fotos = C.fotosDe(p, m);
+      var foto = fotos.filter(function (f) { return f.ancho && f.alto && f.ancho >= f.alto * 1.2; })[0] || fotos[0];
+      var url = 'producto.html?id=' + p.id + '&metal=' + m;
+      var cat = C.getCategory(p.cat);
+      return '<article class="slide" aria-roledescription="diapositiva" aria-label="' + (n + 1) + ' de ' + lista.length + '">' +
+        '<div class="container slide__in">' +
+          '<div class="slide__txt">' +
+            '<span class="label">' + C.METALS[m].label + (cat ? ' · ' + (cat.shortName || cat.name) : '') + '</span>' +
+            '<h2 class="h1">' + p.name + '</h2>' +
+            '<p class="lead">' + p.desc + '</p>' +
+            '<p class="slide__precio">' + C.precioTexto(p.metals[m]) + '</p>' +
+            '<div class="slide__btns"><a class="btn btn--primary" href="' + url + '">Ver joya</a>' +
+            '<a class="btn btn--ghost" href="categoria.html?cat=' + p.cat + '&metal=' + m + '">Ver más ' + (cat ? (cat.shortName || cat.name).toLowerCase() : 'joyas') + '</a></div>' +
+          '</div>' +
+          '<a class="slide__img" href="' + url + '" tabindex="-1">' + C.imgFoto(foto, '', n === 0) + '</a>' +
+        '</div></article>';
+    }).join('');
+    puntos.innerHTML = lista.map(function (p, n) {
+      return '<button class="hero-carrusel__punto" data-ir="' + n + '" aria-label="Ver ' + p.name.replace(/"/g, '&quot;') + '"></button>';
+    }).join('');
+    root.querySelector('[data-prev]').innerHTML = C.icon('chevron');
+    root.querySelector('[data-next]').innerHTML = C.icon('chevron');
+
+    var actual = 0, timer;
+    function ir(n) {
+      actual = (n + lista.length) % lista.length;
+      pista.scrollTo({ left: actual * pista.clientWidth, behavior: 'smooth' });
+    }
+    function marcar() {
+      actual = Math.round(pista.scrollLeft / pista.clientWidth);
+      puntos.querySelectorAll('button').forEach(function (b, k) { b.setAttribute('aria-current', k === actual); });
+    }
+    function auto() {
+      clearInterval(timer);
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      timer = setInterval(function () { if (!document.hidden) ir(actual + 1); }, 6000);
+    }
+    pista.addEventListener('scroll', function () { clearTimeout(pista._t); pista._t = setTimeout(marcar, 80); }, { passive: true });
+    pista.addEventListener('pointerdown', auto);
+    pista.addEventListener('touchstart', auto, { passive: true });
+    root.addEventListener('mouseenter', function () { clearInterval(timer); });
+    root.addEventListener('mouseleave', auto);
+    root.querySelector('[data-prev]').addEventListener('click', function () { ir(actual - 1); auto(); });
+    root.querySelector('[data-next]').addEventListener('click', function () { ir(actual + 1); auto(); });
+    puntos.addEventListener('click', function (e) { var b = e.target.closest('[data-ir]'); if (b) { ir(+b.dataset.ir); auto(); } });
+    window.addEventListener('resize', function () { pista.scrollLeft = actual * pista.clientWidth; });
+    marcar(); auto();
+  }
+
   /* Colección destacada con pestañas Todo | Plata | Oro */
   var filter = 'todo';
   function renderFeatured() {
     var list = C.PRODUCTS.filter(function (p) { return filter === 'todo' || C.tieneMetal(p, filter); });
-    var picks = ['anillo-aura-esmeralda', 'dije-cruz-cristo', 'anillo-riviera-esmeralda', 'pulsera-tejida-raqueta', 'anillo-duo-esmeralda-azul', 'cadena-veneciana', 'anillo-cruzado-esmeralda', 'pulsera-tejida-letra-v'];
-    list.sort(function (a, b) {
-      var ia = picks.indexOf(a.id), ib = picks.indexOf(b.id);
-      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
-    });
+    list.sort(ordenDestacado);
     var box = document.querySelector('[data-featured]');
     box.innerHTML = list.slice(0, 8).map(function (p) {
       return C.productCard(p, filter === 'todo' ? C.state.metal : filter);
@@ -104,11 +165,10 @@
     paintJewels();
     initHero();
     renderCollections();
-    C.catalogo.then(function () { renderFeatured(); C.observeReveal(); });
+    C.catalogo.then(function () { initCarrusel(); renderFeatured(); C.observeReveal(); });
     initTabs();
     initProcess();
     initSlider();
-    C.mountStudio(document.querySelector('[data-studio]'));
     C.observeReveal();
   });
 
