@@ -757,13 +757,19 @@
     raiz.innerHTML = '<p class="muted" style="padding:60px 0">Cargando…</p>';
     C.auth.listo.then(function (u) {
       if (!u) return sinPermiso(null);
-      return C.sb.rpc('es_admin').then(function (r) {
-        if (r.error || !r.data) return sinPermiso(u);
-        return cargar().then(function () {
-          eventos();
-          // admin.html#paquete=<id> abre ese paquete directamente
-          var m = location.hash.match(/^#paquete=(.+)$/), p = m && joyas.find(function (x) { return x.id === decodeURIComponent(m[1]); });
-          if (p) ir('paquete', p); else ir('lista');
+      // Comprueba con Supabase que la sesión guardada en el navegador siga abierta
+      return C.sb.auth.getUser().then(function (g) {
+        if (g.error || !g.data || !g.data.user) {
+          return C.sb.auth.signOut({ scope: 'local' }).then(function () { sinPermiso(null); C.avisar('Tu sesión se cerró. Entra de nuevo con Google.'); });
+        }
+        return C.sb.rpc('es_admin').then(function (r) {
+          if (r.error || !r.data) return sinPermiso(u);
+          return cargar().then(function () {
+            eventos();
+            // admin.html#paquete=<id> abre ese paquete directamente
+            var m = location.hash.match(/^#paquete=(.+)$/), p = m && joyas.find(function (x) { return x.id === decodeURIComponent(m[1]); });
+            if (p) ir('paquete', p); else ir('lista');
+          });
         });
       });
     }).catch(function (e) {

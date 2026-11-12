@@ -32,18 +32,28 @@
 
   var SIN_SESION = 'Se cerró tu sesión. Recarga la página y vuelve a entrar con Google.';
 
-  /* Token de sesión vigente: si le quedan menos de 5 minutos (o forzar), se renueva antes de usarlo */
-  function token(forzar) {
-    return C.sb.auth.getSession().then(function (r) {
-      var s = r.data && r.data.session;
-      if (!s) throw new Error(SIN_SESION);
-      var queda = (s.expires_at || 0) * 1000 - Date.now();
-      if (!forzar && queda > 5 * 60 * 1000) return s.access_token;
-      return C.sb.auth.refreshSession().then(function (x) {
+  /* Token de sesión vigente. Supabase renueva solo el token cuando vence (getSession).
+     Si hay que forzar la renovación, se hace UNA sola vez aunque haya varias fotos pidiéndola a la vez:
+     cada llave de renovación sirve una vez, y usarla dos veces cierra la sesión. */
+  var renovando = null;
+  function renovar() {
+    if (!renovando) {
+      renovando = C.sb.auth.refreshSession().then(function (x) {
         var n = x.data && x.data.session;
         if (!n) throw new Error(SIN_SESION);
         return n.access_token;
       });
+      renovando.then(soltar, soltar);
+    }
+    return renovando;
+  }
+  function soltar() { setTimeout(function () { renovando = null; }, 2000); }
+  function token(forzar) {
+    if (forzar || renovando) return renovar();
+    return C.sb.auth.getSession().then(function (r) {
+      var s = r.data && r.data.session;
+      if (!s) throw new Error(SIN_SESION);
+      return s.access_token;
     });
   }
 
