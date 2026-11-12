@@ -161,11 +161,35 @@
     go(0); auto();
   }
 
+  /* Letrerito flotante (abajo a la izquierda): invita a personalizar la pulsera tejida.
+     Se puede cerrar; al cerrarlo no vuelve a salir en 3 días. */
+  function initLetrero() {
+    var CLAVE = 'camelia-letrero-pulsera', DIAS = 3;
+    try { if (Date.now() - (parseInt(localStorage.getItem(CLAVE), 10) || 0) < DIAS * 864e5) return; } catch (e) {}
+    var p = C.PRODUCTS.find(function (x) { return x.cat === 'pulseras' && x.fotos && x.fotos.length; });
+    var img = p ? '<img src="' + C.fotosDe(p, C.displayMetal(p))[0].url + '" alt="">' : C.jewelSVG('pulsera', 'oro', { variant: 'clasica' });
+    var el = document.createElement('aside');
+    el.className = 'letrero';
+    el.setAttribute('aria-label', 'Personaliza tu pulsera tejida');
+    el.innerHTML = '<a class="letrero__link" href="personaliza-pulsera.html">' +
+        '<span class="letrero__img">' + img + '</span>' +
+        '<span class="letrero__txt"><span class="letrero__kicker">✦ Nuevo</span><strong>Personaliza tu pulsera tejida</strong>' +
+        '<span class="letrero__sub">Elige el hilo, los balines de oro 18K y el dije</span></span></a>' +
+      '<button type="button" class="letrero__cerrar" aria-label="Cerrar">' + C.icon('close') + '</button>';
+    document.body.appendChild(el);
+    setTimeout(function () { el.classList.add('is-on'); }, 1500);
+    el.querySelector('.letrero__cerrar').addEventListener('click', function () {
+      el.classList.remove('is-on');
+      try { localStorage.setItem(CLAVE, String(Date.now())); } catch (e) {}
+      setTimeout(function () { el.remove(); }, 400);
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     paintJewels();
     initHero();
     renderCollections();
-    C.catalogo.then(function () { initCarrusel(); renderFeatured(); C.observeReveal(); });
+    C.catalogo.then(function () { initCarrusel(); renderFeatured(); C.observeReveal(); initLetrero(); });
     initTabs();
     initProcess();
     initSlider();

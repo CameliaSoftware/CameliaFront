@@ -1178,3 +1178,26 @@ a.combo__item { grid-template-columns: 56px 1fr auto; color: inherit; text-decor
   .adm__propuestas { grid-template-columns: 1fr; }
 }
 .adm__gen-roles { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin: -6px 0 16px; }
+
+/* ---------- Letrerito flotante: personaliza tu pulsera ---------- */
+.letrero { position: fixed; left: 24px; bottom: 24px; z-index: 60; display: flex; align-items: stretch; max-width: 340px; background: var(--bg); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 24px 48px -20px rgba(60, 48, 25, .35); opacity: 0; transform: translateY(20px); pointer-events: none; transition: opacity .4s ease, transform .4s ease; }
+.letrero.is-on { opacity: 1; transform: none; pointer-events: auto; }
+.letrero__link { display: flex; align-items: center; gap: 14px; padding: 12px 40px 12px 12px; color: inherit; text-decoration: none; }
+.letrero__img { flex: none; width: 64px; height: 64px; border-radius: 12px; overflow: hidden; background: var(--cream); display: grid; place-items: center; }
+.letrero__img img, .letrero__img svg { width: 100%; height: 100%; object-fit: cover; }
+.letrero__txt { display: grid; gap: 2px; }
+.letrero__kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.letrero__txt strong { font-family: var(--serif); font-weight: 500; font-size: 20px; line-height: 1.1; }
+.letrero__sub { font-size: 13px; color: var(--muted); }
+.letrero__link:hover strong { color: var(--accent); }
+.letrero__cerrar { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
+.letrero__cerrar:hover { background: var(--cream); color: var(--ink); }
+.letrero__cerrar .icon { width: 16px; height: 16px; }
+@media (max-width: 720px) {
+  .letrero { left: 12px; right: 84px; bottom: 16px; max-width: none; }
+  .letrero__link { gap: 10px; padding: 8px 36px 8px 8px; }
+  .letrero__img { width: 48px; height: 48px; }
+  .letrero__txt strong { font-size: 17px; }
+  .letrero__sub { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .letrero { transition: none; } }
