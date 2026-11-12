@@ -47,7 +47,7 @@
   /* Colección destacada con pestañas Todo | Plata | Oro */
   var filter = 'todo';
   function renderFeatured() {
-    var list = C.PRODUCTS.filter(function (p) { return filter === 'todo' || p.metals[filter]; });
+    var list = C.PRODUCTS.filter(function (p) { return filter === 'todo' || C.tieneMetal(p, filter); });
     var picks = ['anillo-orbita', 'aretes-eclipse', 'collar-aura', 'anillo-sol', 'dije-colibri', 'pulsera-hematita', 'solitario-luna', 'argollas-eterna'];
     list.sort(function (a, b) {
       var ia = picks.indexOf(a.id), ib = picks.indexOf(b.id);

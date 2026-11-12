@@ -17,18 +17,18 @@
   };
 
   function priceFor(p) {
-    var m = f.metal.length === 1 && p.metals[f.metal[0]] ? f.metal[0] : C.displayMetal(p, C.state.metal);
+    var m = f.metal.length === 1 && C.tieneMetal(p, f.metal[0]) ? f.metal[0] : C.displayMetal(p, C.state.metal);
     return p.metals[m];
   }
 
   function matches(p, skip) {
     if (skip !== 'cat' && f.cat.length && f.cat.indexOf(p.cat) < 0) return false;
     if (skip !== 'sub' && f.sub && p.sub !== f.sub) return false;
-    if (skip !== 'metal' && f.metal.length && !f.metal.some(function (m) { return p.metals[m]; })) return false;
+    if (skip !== 'metal' && f.metal.length && !f.metal.some(function (m) { return C.tieneMetal(p, m); })) return false;
     if (skip !== 'piedra' && f.piedra.length && f.piedra.indexOf(p.stone) < 0) return false;
     if (skip !== 'precio' && f.precio.length && !f.precio.some(function (id) {
       var r = C.PRICE_RANGES.find(function (x) { return x.id === id; });
-      return Object.keys(p.metals).some(function (m) { return p.metals[m] >= r.min && p.metals[m] < r.max; });
+      return Object.keys(p.metals).some(function (m) { return p.metals[m] > 0 && p.metals[m] >= r.min && p.metals[m] < r.max; });
     })) return false;
     if (skip !== 'custom' && f.custom && !p.custom) return false;
     if (f.favoritos && !C.isFav(p.id)) return false;
@@ -67,11 +67,11 @@
       })) +
       subGroup() +
       group('Metal', 'metal', [
-        { id: 'plata', label: 'Plata 925', swatch: 'plata', test: function (p) { return !!p.metals.plata; } },
-        { id: 'oro', label: 'Oro 18K', swatch: 'oro', test: function (p) { return !!p.metals.oro; } },
+        { id: 'plata', label: 'Plata 925', swatch: 'plata', test: function (p) { return C.tieneMetal(p, 'plata'); } },
+        { id: 'oro', label: 'Oro 18K', swatch: 'oro', test: function (p) { return C.tieneMetal(p, 'oro'); } },
       ]) +
       group('Precio', 'precio', C.PRICE_RANGES.map(function (r) {
-        return { id: r.id, label: r.label, test: function (p) { return Object.keys(p.metals).some(function (m) { return p.metals[m] >= r.min && p.metals[m] < r.max; }); } };
+        return { id: r.id, label: r.label, test: function (p) { return Object.keys(p.metals).some(function (m) { return p.metals[m] > 0 && p.metals[m] >= r.min && p.metals[m] < r.max; }); } };
       })) +
       group('Piedra', 'piedra', Object.keys(C.STONES).map(function (k) {
         return { id: k, label: C.STONES[k], test: function (p) { return p.stone === k; } };

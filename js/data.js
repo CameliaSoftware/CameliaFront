@@ -209,6 +209,20 @@ CAMELIA.formatCOP = function (n) {
   return '$ ' + new Intl.NumberFormat('es-CO').format(Math.round(n)) + ' COP';
 };
 
+/* Datos de contacto. Con número de WhatsApp (código de país + número, ej. '573001234567')
+   las consultas van por WhatsApp; sin número, por correo. */
+CAMELIA.CONTACTO = { whatsapp: '', correo: 'joyascameliacorp@gmail.com' };
+
+/* Una joya puede estar publicada sin precio todavía: su metal existe con precio 0. */
+CAMELIA.tieneMetal = function (p, m) { return !!p && p.metals[m] !== undefined; };
+CAMELIA.precioTexto = function (n) { return n ? CAMELIA.formatCOP(n) : 'Precio a consultar'; };
+CAMELIA.enlaceConsulta = function (p, metal) {
+  var texto = 'Hola, quiero saber el precio de ' + p.name + (metal ? ' en ' + CAMELIA.METALS[metal].label : '') + '.';
+  var c = CAMELIA.CONTACTO;
+  return c.whatsapp ? 'https://wa.me/' + c.whatsapp + '?text=' + encodeURIComponent(texto)
+    : 'mailto:' + c.correo + '?subject=' + encodeURIComponent('Precio de ' + p.name) + '&body=' + encodeURIComponent(texto);
+};
+
 CAMELIA.getProduct = function (id) {
   return CAMELIA.PRODUCTS.find(function (p) { return p.id === id; });
 };
@@ -219,6 +233,6 @@ CAMELIA.getCategory = function (id) {
 
 /* Metal que se muestra de un producto: el elegido en el switch Plata | Oro si existe, si no el principal. */
 CAMELIA.displayMetal = function (product, preferred) {
-  if (preferred && product.metals[preferred]) return preferred;
+  if (preferred && CAMELIA.tieneMetal(product, preferred)) return preferred;
   return Object.keys(product.metals)[0];
 };

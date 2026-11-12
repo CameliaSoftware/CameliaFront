@@ -9,7 +9,7 @@
     p = C.getProduct(params.get('id'));
     if (!p) return false;
     cat = C.getCategory(p.cat) || C.CATEGORIES[0];
-    metal = p.metals[params.get('metal')] ? params.get('metal') : C.displayMetal(p, C.state.metal);
+    metal = C.tieneMetal(p, params.get('metal')) ? params.get('metal') : C.displayMetal(p, C.state.metal);
     hasSize = p.cat === 'anillos' || p.cat === 'argollas';
     if (p.detalle) VIEWS_3D[1] = { name: 'Detalle', orbit: p.detalle.orbit, target: p.detalle.target };
     return true;
@@ -152,8 +152,9 @@
       '<div class="info">' +
         '<div><span class="label">' + cat.name + ' · ' + p.sub + '</span>' +
           '<h1 class="h2" style="margin-top:12px">' + p.name + '</h1>' +
-          '<p class="price info__price" style="margin-top:14px">' + C.formatCOP(p.metals[metal]) + '</p>' +
-          '<p class="muted small">Hasta 6 cuotas sin interés · PSE, Nequi y tarjetas</p></div>' +
+          '<p class="price info__price" style="margin-top:14px">' + C.precioTexto(p.metals[metal]) + '</p>' +
+          (p.metals[metal] ? '<p class="muted small">Hasta 6 cuotas sin interés · PSE, Nequi y tarjetas</p>'
+            : '<p class="muted small">Escríbenos y te damos el precio de esta joya.</p>') + '</div>' +
         '<p>' + (p.texto || p.desc + '. Pieza hecha a mano en Colombia, con acabado pulido y empaque de regalo.') + '</p>' +
         '<div class="field"><span class="label">Metal</span><div class="options">' + metals.map(function (m) {
           return '<button class="option" data-metal-pick="' + m + '" aria-pressed="' + (m === metal) + '"><span class="swatch swatch--' + m + '"></span>' + C.METALS[m].label + '</button>';
@@ -163,7 +164,8 @@
           [5, 6, 7, 8, 9, 10, 11].map(function (n) {
             return '<button class="option option--size" data-size="' + n + '" aria-pressed="' + (n === size) + '">' + n + '</button>';
           }).join('') + '</div><p class="small" style="color:#a3412a;margin-top:8px" data-size-msg hidden>Elige tu talla para continuar.</p></div>' : '') +
-        '<div class="info__actions"><button class="btn btn--primary btn--block" data-buy>Agregar a la bolsa</button>' +
+        '<div class="info__actions">' + (p.metals[metal] ? '<button class="btn btn--primary btn--block" data-buy>Agregar a la bolsa</button>'
+          : '<a class="btn btn--primary btn--block" href="' + C.enlaceConsulta(p, metal) + '" target="_blank" rel="noopener">Consultar precio</a>') +
           '<button class="icon-btn' + (fav ? ' is-fav' : '') + '" data-fav="' + p.id + '" aria-pressed="' + fav + '" aria-label="Favorito">' + C.icon('heart') + '</button></div>' +
         (p.custom ? '<a class="btn btn--ghost btn--block" href="disena.html?tipo=' + cat.shape + '">Personalizar esta joya ' + C.icon('sparkle') + '</a>' : '') +
         '<ul class="perks">' +

@@ -234,7 +234,7 @@
             var m = C.displayMetal(p, state.metal);
             return '<a class="search__hit" href="producto.html?id=' + p.id + '"><span class="search__img">' +
               C.jewelSVG(C.getCategory(p.cat).shape, m, { variant: p.variant, stone: p.stone }) + '</span>' +
-              '<span><strong>' + p.name + '</strong><br><span class="muted">' + C.METALS[m].label + ' · ' + C.formatCOP(p.metals[m]) + '</span></span></a>';
+              '<span><strong>' + p.name + '</strong><br><span class="muted">' + C.METALS[m].label + ' · ' + C.precioTexto(p.metals[m]) + '</span></span></a>';
           }).join('')
         : '<p class="muted">No encontramos “' + input.value.replace(/</g, '&lt;') + '”. ¿Y si la diseñas? <a class="link-arrow" href="disena.html">Diseñar ' + C.icon('arrow') + '</a></p>';
     }
@@ -287,6 +287,7 @@
   };
 
   C.addProductToCart = function (product, metal, extra) {
+    if (!product.metals[metal]) { window.open(C.enlaceConsulta(product, metal), '_blank', 'noopener'); return; }
     extra = extra || {};
     var cat = C.getCategory(product.cat);
     C.addToCart({
@@ -403,7 +404,7 @@
     (r.variantes || []).filter(function (v) { return v.activo !== false; }).forEach(function (v) {
       var calculado = v.peso_gramos && gramo[v.metal] ? Math.round(Number(v.peso_gramos) * gramo[v.metal] + (v.costo_hechura || 0)) : null;
       var precio = v.precio_fijo || calculado;
-      if (!precio) return;
+      if (!precio) { if (!(v.metal in metals)) metals[v.metal] = 0; return; }   // publicada sin precio
       if (!metals[v.metal] || precio < metals[v.metal]) metals[v.metal] = precio;
       if (v.peso_gramos) peso[v.metal] = Number(v.peso_gramos);
       if (v.largo_cm) largo = Number(v.largo_cm);
@@ -473,10 +474,11 @@
         (p.model ? '<span class="tag tag--3d">' + C.icon('rotate') + '3D</span>' : '') +
       '</a>' +
       '<button class="card__fav' + (fav ? ' is-fav' : '') + '" data-fav="' + p.id + '" aria-pressed="' + fav + '" aria-label="Agregar ' + p.name + ' a favoritos">' + C.icon('heart') + '</button>' +
-      '<button class="card__add" data-add="' + p.id + '" data-metal="' + m + '">Agregar a la bolsa</button></div>' +
+      (p.metals[m] ? '<button class="card__add" data-add="' + p.id + '" data-metal="' + m + '">Agregar a la bolsa</button>'
+        : '<a class="card__add" href="' + C.enlaceConsulta(p, m) + '" target="_blank" rel="noopener">Consultar precio</a>') + '</div>' +
       '<div class="card__body"><h3 class="card__name">' + p.name + '</h3>' +
         '<p class="card__desc">' + C.METALS[m].short + ' · ' + p.desc + '</p>' +
-        '<p class="card__price"><span class="price">' + C.formatCOP(p.metals[m]) + '</span>' +
+        '<p class="card__price"><span class="price">' + C.precioTexto(p.metals[m]) + '</span>' +
         (Object.keys(p.metals).length > 1 ? '<span class="card__alt">También en ' + C.METALS[m === 'oro' ? 'plata' : 'oro'].short.toLowerCase() + '</span>' : '') +
       '</p></div></article>';
   };
