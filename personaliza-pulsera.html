@@ -39,13 +39,20 @@
             <p class="tj__loading" data-loading>Preparando tu pulsera…</p>
           </div>
           <div class="tj__stage-bar">
-            <span class="tag tag--3d"><svg class="icon" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4h-4"/></svg>Arrastra para girar 360° · rueda para acercar</span>
+            <span class="tag tag--3d"><svg class="icon" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4h-4"/></svg>Arrastra las bolas para moverlas · arrastra el fondo para girar</span>
             <div class="tj__stage-actions">
               <button class="chip" data-cam="frente">Frente</button>
               <button class="chip" data-cam="arriba">Arriba</button>
               <button class="chip" data-cam="detalle">Detalle</button>
               <button class="chip" data-autorotate aria-pressed="true">Girar sola</button>
             </div>
+          </div>
+          <div class="tj__rapido" data-rapido>
+            <span class="small muted">Agregar:</span>
+            <button class="chip" data-add-rapido="oro"><i class="dot3d dot3d--oro" style="width:14px;height:14px"></i> Balín liso</button>
+            <button class="chip" data-add-rapido="diamantado"><i class="dot3d dot3d--diamantado" style="width:14px;height:14px"></i> Diamantado</button>
+            <button class="chip" data-add-rapido="neopreno"><i class="dot3d dot3d--neo" style="width:14px;height:14px;background:#1b1b1d"></i> Neopreno</button>
+            <button class="chip" data-add-rapido="letra"><i class="dot3d dot3d--letra" style="width:14px;height:14px;font-size:9px">A</i> Letra</button>
           </div>
         </div>
 
@@ -73,7 +80,14 @@
 
           <section class="tj__step">
             <span class="label">05 · Arma tu diseño <span data-fit></span></span>
-            <p class="muted small">Toca una cuenta para agregarla, o arrástrala a la posición que quieras. Arrastra una cuenta fuera de la línea para quitarla.</p>
+            <div class="tj__nombre">
+              <label class="small" for="tj-nombre"><strong>Letras de oro 18K como dije</strong> · escribe un nombre o unas iniciales</label>
+              <div class="tj__nombre-fila">
+                <input class="input" id="tj-nombre" data-nombre maxlength="12" placeholder="Ej: SOFIA, J&M, MAMÁ" autocomplete="off">
+                <button class="btn btn--primary" data-poner-nombre>Agregar letras</button>
+              </div>
+            </div>
+            <p class="muted small">Toca una cuenta para agregarla, o arrástrala a la posición que quieras. También puedes arrastrar las bolas directamente sobre la pulsera. Arrastra una cuenta fuera de la línea para quitarla.</p>
             <div class="palette" data-palette></div>
             <div class="strip-wrap">
               <div class="strip" data-strip aria-label="Orden de las cuentas"></div>
@@ -90,6 +104,8 @@
               <button class="chip" data-preset="alterna">Oro y neopreno</button>
               <button class="chip" data-preset="medalla">Medalla al centro</button>
               <button class="chip" data-preset="tres">Tres balines</button>
+              <button class="chip" data-preset="nombre">Con letras</button>
+              <button class="chip" data-preset="azar">✦ Sorpréndeme</button>
               <button class="chip" data-preset="vaciar">Vaciar</button>
             </div>
           </section>

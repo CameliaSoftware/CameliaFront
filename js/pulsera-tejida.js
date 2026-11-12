@@ -11,6 +11,8 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 
 const C = window.CAMELIA;
 const TJ = C.TEJIDO;
@@ -27,6 +29,7 @@ const TIPOS = {
   neopreno: { name: 'Neopreno', short: 'Neopreno' },
   hematita: { name: 'Hematita', short: 'Hematita' },
   medalla: { name: 'Medalla con inicial', short: 'Medalla' },
+  letra: { name: 'Letra de oro (dije)', short: 'Letra' },
   nudo: { name: 'Nudo (espacio)', short: 'Nudo' },
 };
 
@@ -36,6 +39,7 @@ const PRESETS = {
     item('neopreno', { color: 'negro' }), item('oro'), item('neopreno', { color: 'negro' })],
   medalla: () => [item('oro'), item('oro'), item('oro'), item('medalla', { letra: 'C' }), item('oro'), item('oro'), item('oro')],
   tres: () => [item('oro'), item('diamantado'), item('oro')],
+  nombre: () => [item('diamantado'), item('oro'), ...'AMOR'.split('').map((l) => item('letra', { letra: l })), item('oro'), item('diamantado')],
   vaciar: () => [],
 };
 
@@ -74,6 +78,7 @@ function tamano(it) {
     case 'neopreno': return state.balin + 1;
     case 'hematita': return Math.max(6, state.balin + 2);
     case 'medalla': return 12;
+    case 'letra': return 7;
     case 'nudo': return medidas().ks * 2.4;
     default: return state.balin;
   }
@@ -99,11 +104,12 @@ function resumen() {
   const est = find(TJ.estilos, state.estilo);
   const balines = state.seq.filter((it) => it.type === 'oro' || it.type === 'diamantado').length;
   const medallas = state.seq.filter((it) => it.type === 'medalla').length;
+  const letras = state.seq.filter((it) => it.type === 'letra').length;
   const neo = state.seq.filter((it) => it.type === 'neopreno').length;
   const hem = state.seq.filter((it) => it.type === 'hematita').length;
   const gBalin = C.pesoBalin(state.balin);
   const gPuntas = 2 * C.pesoBalin(3);       // balines de 3 mm en las puntas del cordón
-  const gramos = balines * gBalin + medallas * C.ORO18K.medallaGramos + gPuntas;
+  const gramos = balines * gBalin + medallas * C.ORO18K.medallaGramos + letras * C.ORO18K.letraGramos + gPuntas;
   const oro = gramos * C.ORO18K.precioGramo;
   const lineas = [
     ['Oro 18K · ' + fmtG(gramos), oro],
@@ -112,7 +118,7 @@ function resumen() {
   if (neo) lineas.push(['Neopreno × ' + neo, neo * TJ.precios.neopreno]);
   if (hem) lineas.push(['Hematita × ' + hem, hem * TJ.precios.hematita]);
   const total = Math.round(lineas.reduce((n, l) => n + l[1], 0) / 1000) * 1000;
-  return { balines, medallas, neo, hem, gBalin, gPuntas, gramos, lineas, total };
+  return { balines, medallas, letras, neo, hem, gBalin, gPuntas, gramos, lineas, total };
 }
 
 const fmtG = (g) => g.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' g';
@@ -343,6 +349,38 @@ function medalla(letra) {
   return grupo;
 }
 
+/* Letras de oro 18K (dije): letra en relieve con un pasador por detrás para ensartarla.
+   La fuente se carga aparte; mientras llega (o si la letra no está en la fuente) se usa una medalla. */
+let FUENTE = null;
+new FontLoader().load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/gentilis_bold.typeface.json', (f) => {
+  FUENTE = f;
+  if (state.seq.some((it) => it.type === 'letra')) construir();
+});
+function geoLetra(ch) {
+  return geo('L' + ch, () => {
+    const g = new TextGeometry(ch, { font: FUENTE, size: 7, height: 1.3, depth: 1.3, curveSegments: 8, bevelEnabled: true, bevelThickness: 0.25, bevelSize: 0.22, bevelSegments: 3 });
+    g.computeBoundingBox();
+    const b = g.boundingBox;
+    g.translate(-(b.max.x + b.min.x) / 2, -(b.max.y + b.min.y) / 2, -(b.max.z + b.min.z) / 2);
+    return g;
+  });
+}
+function letra3D(ch, m) {
+  const c = (ch || '').toUpperCase();
+  if (!FUENTE || !c || !FUENTE.data.glyphs[c]) {
+    const med = medalla(c);
+    med.position.z = m.H / 2 + 0.7;
+    return med;
+  }
+  const grupo = new THREE.Group();
+  const l = new THREE.Mesh(geoLetra(c), MAT_ORO);
+  l.position.z = m.H / 2 + 1.0;
+  const pasador = new THREE.Mesh(geo('pas', () => new THREE.CylinderGeometry(0.9, 0.9, 5.6, 20).rotateZ(Math.PI / 2)), MAT_ORO);
+  pasador.position.z = m.H / 2 - 0.2;
+  grupo.add(l, pasador);
+  return grupo;
+}
+
 /* ------------------------------------------------------------------
    Construcción de la pulsera
 ------------------------------------------------------------------ */
@@ -350,6 +388,8 @@ let pulsera = null;
 let desechables = [];
 const mallasPorId = new Map();
 let marcoFrente = null;
+let geoInfo = null;            // radio, altura y posición (s) de cada cuenta, para arrastrar en 3D
+const nacimiento = new Map();  // id → segundo en que se agregó (animación de entrada)
 
 function construir() {
   if (SIN_3D) return;
@@ -362,20 +402,23 @@ function construir() {
   const m = medidas();
   const Lc = talla().cm * 10;
   const Rc = Lc / (2 * Math.PI);
-  const alturas = state.seq.map((it) => (it.type === 'medalla' ? 12 : it.type === 'nudo' ? 0 : tamano(it)));
+  const alturas = state.seq.map((it) => (it.type === 'medalla' ? 12 : it.type === 'letra' ? 8 : it.type === 'nudo' ? 0 : tamano(it)));
   const Yc = Math.max(m.W, 3, ...alturas) / 2 + 0.15;
   const hex = hilo().hex;
 
-  /* Marco local en la posición s (mm a lo largo de la pulsera, s=0 es el cierre, atrás) */
+  /* Marco local en la posición s (mm a lo largo de la pulsera, s=0 es el cierre, atrás).
+     s crece hacia la derecha vista de frente: la primera cuenta de la tira queda a la izquierda
+     y las letras se leen bien. */
   const marco = (s) => {
-    const a = -Math.PI / 2 + s / Rc;
+    const a = -Math.PI / 2 - s / Rc;
     const P = new THREE.Vector3(Rc * Math.cos(a), Yc, Rc * Math.sin(a));
-    const T = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a));
+    const T = new THREE.Vector3(Math.sin(a), 0, -Math.cos(a));
     const N = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
     const U = new THREE.Vector3(0, 1, 0);
-    const M = new THREE.Matrix4().makeBasis(T.clone().negate(), U, N).setPosition(P);
+    const M = new THREE.Matrix4().makeBasis(T, U, N).setPosition(P);
     return { P, T, N, U, M };
   };
+  geoInfo = { Rc, Yc, Lc, centros: [] };
   marcoFrente = marco(Lc / 2);
 
   const agregar = (mesh) => {
@@ -399,6 +442,7 @@ function construir() {
     const d = tamano(it);
     const centro = s + d / 2;
     s += d + gapEntre();
+    geoInfo.centros.push({ id: it.id, s: centro });
     if (it.type === 'nudo') return;
     ocupado.push([centro - d / 2, centro + d / 2]);
     const f = marco(centro);
@@ -411,6 +455,8 @@ function construir() {
       mesh = medalla(it.letra);
       mesh.position.z = m.H / 2 + 0.7;           // sobre la cara exterior del tejido
     }
+    else if (it.type === 'letra') mesh = letra3D(it.letra, m);
+    mesh.traverse((o) => { o.userData.itemId = it.id; });
     const pivote = new THREE.Group();
     pivote.matrixAutoUpdate = false;
     pivote.matrix.copy(f.M);
@@ -581,7 +627,17 @@ renderer.setAnimationLoop(() => {
     controls.target.lerp(camDestino.target, 0.08);
     if (camera.position.distanceTo(camDestino.pos) < 0.5) camDestino = null;
   }
-  mallasPorId.forEach((mesh, id) => mesh.scale.setScalar(id === state.sel ? 1 + 0.07 * (0.5 + 0.5 * Math.sin(t * 5)) : 1));
+  mallasPorId.forEach((mesh, id) => {
+    let k = id === state.sel ? 1 + 0.07 * (0.5 + 0.5 * Math.sin(t * 5)) : 1;
+    if (arrastre3D && arrastre3D.id === id && arrastre3D.activo) k = 1.18;
+    const n = nacimiento.get(id);
+    if (n !== undefined) {
+      const x = Math.min(1, (t - n) / 0.45);
+      k *= x < 1 ? 1 - Math.pow(1 - x, 3) * 1.0 + Math.sin(x * Math.PI) * 0.18 : 1;
+      if (x >= 1) nacimiento.delete(id);
+    }
+    mesh.scale.setScalar(Math.max(0.001, k));
+  });
   controls.update();
   if (composer) composer.render(); else renderer.render(scene, camera);
 });
@@ -605,6 +661,7 @@ function vistaCuenta(it, px) {
   const base = 'width:' + size + 'px;height:' + size + 'px;';
   if (it.type === 'neopreno') return '<i class="dot3d dot3d--neo" style="' + base + 'background:' + find(TJ.neoprenos, it.color || state.neoColor).hex + '"></i>';
   if (it.type === 'medalla') return '<i class="dot3d dot3d--medalla" style="' + base + '">' + (it.letra || '') + '</i>';
+  if (it.type === 'letra') return '<i class="dot3d dot3d--letra" style="' + base + 'font-size:' + Math.round(size * 0.62) + 'px">' + (it.letra || '') + '</i>';
   return '<i class="dot3d dot3d--' + it.type + '" style="' + base + '"></i>';
 }
 
@@ -630,7 +687,7 @@ function pintarPanel() {
       '<strong>' + d + ' mm</strong><span>' + fmtG(g) + ' c/u</span><em>' + C.formatCOP(g * C.ORO18K.precioGramo) + '</em></button>';
   }).join('');
 
-  $('[data-palette]').innerHTML = ['oro', 'diamantado', 'neopreno', 'hematita', 'medalla', 'nudo'].map((t) =>
+  $('[data-palette]').innerHTML = ['oro', 'diamantado', 'neopreno', 'letra', 'hematita', 'medalla', 'nudo'].map((t) =>
     '<button class="palette__item" data-add="' + t + '">' + vistaCuenta({ type: t, color: state.neoColor, letra: 'A' }) +
     '<span>' + TIPOS[t].name + '</span><b aria-hidden="true">+</b></button>').join('');
 
@@ -657,6 +714,7 @@ function pintarPanel() {
   const partes = [];
   if (r.balines) partes.push(r.balines + ' balín' + (r.balines > 1 ? 'es' : '') + ' de ' + state.balin + ' mm (' + fmtG(r.gBalin) + ' c/u)');
   if (r.medallas) partes.push(r.medallas + ' medalla' + (r.medallas > 1 ? 's' : '') + ' (' + fmtG(C.ORO18K.medallaGramos) + ')');
+  if (r.letras) partes.push(r.letras + ' letra' + (r.letras > 1 ? 's' : '') + ' de oro (' + fmtG(C.ORO18K.letraGramos) + ' c/u)');
   partes.push('2 balines de 3 mm en las puntas');
   $('[data-gramos-detalle]').textContent = partes.join(' · ');
   $('[data-lineas]').innerHTML = r.lineas.map((l) => '<div><dt>' + l[0] + '</dt><dd class="price">' + C.formatCOP(l[1]) + '</dd></div>').join('');
@@ -679,8 +737,8 @@ function pintarEditor() {
     extra = '<div class="options">' + ['oro', 'diamantado'].map((t) =>
       '<button class="option" data-acabado="' + t + '" aria-pressed="' + (t === it.type) + '">' + TIPOS[t].short + '</button>').join('') + '</div>';
   }
-  if (it.type === 'medalla') {
-    extra = '<label class="small muted">Inicial grabada <input class="input" data-letra maxlength="1" value="' + (it.letra || '') + '" style="width:70px;margin-left:8px;text-align:center"></label>';
+  if (it.type === 'medalla' || it.type === 'letra') {
+    extra = '<label class="small muted">' + (it.type === 'medalla' ? 'Inicial grabada' : 'Letra') + ' <input class="input" data-letra maxlength="1" value="' + (it.letra || '') + '" style="width:70px;margin-left:8px;text-align:center"></label>';
   }
   box.hidden = false;
   box.innerHTML = '<div class="bead-editor__head">' + vistaCuenta(it, 26) + '<strong>' + TIPOS[it.type].name + '</strong><span class="muted small">Posición ' + (i + 1) + ' de ' + state.seq.length + '</span></div>' +
@@ -708,12 +766,56 @@ function aviso(texto) {
 function cabe(seq) { return largoDiseno(seq) <= largoDisponible(); }
 
 function insertar(tipo, index) {
-  const nuevo = item(tipo, tipo === 'neopreno' ? { color: state.neoColor } : tipo === 'medalla' ? { letra: 'C' } : {});
+  const nuevo = item(tipo, tipo === 'neopreno' ? { color: state.neoColor } : tipo === 'medalla' || tipo === 'letra' ? { letra: 'C' } : {});
   const seq = state.seq.slice();
   seq.splice(index == null ? seq.length : index, 0, nuevo);
   if (!cabe(seq)) { aviso('No caben más cuentas en talla ' + state.talla + '. Prueba una talla mayor o balines más pequeños.'); return; }
   state.seq = seq;
   state.sel = nuevo.id;
+  nacimiento.set(nuevo.id, reloj.getElapsedTime());
+  actualizar();
+}
+
+/* Letras permitidas en los dijes */
+function limpiarLetras(txt) {
+  return String(txt || '').toUpperCase().normalize('NFD').replace(/N\u0303/g, 'Ñ').replace(/[\u0300-\u036f]/g, '').replace(/[^A-ZÑ0-9&]/g, '');
+}
+
+/* Escribe un nombre: cada letra entra como dije de oro, en el centro de la pulsera */
+function ponerNombre() {
+  const campo = $('[data-nombre]');
+  const letras = limpiarLetras(campo.value).slice(0, 12).split('');
+  if (!letras.length) { aviso('Escribe un nombre o unas iniciales.'); return campo.focus(); }
+  const nuevos = letras.map((l) => item('letra', { letra: l }));
+  const seq = state.seq.slice();
+  seq.splice(Math.floor(seq.length / 2), 0, ...nuevos);
+  if (!cabe(seq)) {
+    aviso('"' + letras.join('') + '" no cabe en talla ' + state.talla + '. Quita algunas cuentas, usa balines más pequeños o una talla mayor.');
+    return;
+  }
+  state.seq = seq;
+  state.sel = null;
+  const t = reloj.getElapsedTime();
+  nuevos.forEach((n, k) => nacimiento.set(n.id, t + k * 0.08));
+  campo.value = '';
+  actualizar();
+  moverCamara('detalle');
+}
+
+/* Diseño al azar */
+function sorprendeme() {
+  const neo = TJ.neoprenos[Math.floor(Math.random() * TJ.neoprenos.length)].id;
+  const oros = ['oro', 'diamantado'];
+  const n = 3 + Math.floor(Math.random() * 3);
+  const mitad = Array.from({ length: n }, (_, k) => (k % 2 && Math.random() < 0.7 ? item('neopreno', { color: neo }) : item(oros[Math.floor(Math.random() * 2)])));
+  const centro = Math.random() < 0.35 ? [item('letra', { letra: 'ABCDEFGHIJLMNOPRSTV'[Math.floor(Math.random() * 19)] })] : [item(oros[Math.floor(Math.random() * 2)])];
+  const espejo = mitad.slice().reverse().map((x) => ({ ...x, id: ++uid }));
+  let seq = [...mitad, ...centro, ...espejo];
+  while (seq.length > 1 && !cabe(seq)) seq = seq.slice(1, -1);
+  state.seq = seq; state.sel = null;
+  state.hilo = TJ.hilos[Math.floor(Math.random() * TJ.hilos.length)].id;
+  const t = reloj.getElapsedTime();
+  seq.forEach((x, k) => nacimiento.set(x.id, t + k * 0.06));
   actualizar();
 }
 
@@ -737,11 +839,15 @@ document.querySelector('.tj__panel').addEventListener('click', (e) => {
     return actualizar();
   }
   if ((el = b('[data-preset]'))) {
+    if (el.dataset.preset === 'azar') return sorprendeme();
     const seq = PRESETS[el.dataset.preset]();
     state.seq = cabe(seq) ? seq : seq.slice(0, 3);
     state.sel = null;
+    const t = reloj.getElapsedTime();
+    state.seq.forEach((x, k) => nacimiento.set(x.id, t + k * 0.05));
     return actualizar();
   }
+  if (b('[data-poner-nombre]')) return ponerNombre();
   const i = state.seq.findIndex((it) => it.id === state.sel);
   if ((el = b('[data-neo]')) && i > -1) { state.seq[i].color = state.neoColor = el.dataset.neo; return actualizar(); }
   if ((el = b('[data-acabado]')) && i > -1) { state.seq[i].type = el.dataset.acabado; return actualizar(); }
@@ -765,7 +871,8 @@ document.querySelector('.tj__panel').addEventListener('click', (e) => {
     C.addToCart({
       key: 'tejida|' + JSON.stringify([state.estilo, state.hilo, state.ancho, state.balin, state.talla, state.espacio, state.seq.map((x) => [x.type, x.color, x.letra])]),
       name: 'Pulsera tejida personalizada',
-      detail: find(TJ.estilos, state.estilo).name + ' · hilo ' + hilo().name.toLowerCase() + ' · ' + r.balines + ' balines de ' + state.balin + ' mm · ' + fmtG(r.gramos) + ' de oro 18K · Talla ' + state.talla,
+      detail: find(TJ.estilos, state.estilo).name + ' · hilo ' + hilo().name.toLowerCase() + ' · ' + r.balines + ' balines de ' + state.balin + ' mm' +
+        (r.letras ? ' · letras "' + state.seq.filter((x) => x.type === 'letra').map((x) => x.letra).join('') + '"' : '') + ' · ' + fmtG(r.gramos) + ' de oro 18K · Talla ' + state.talla,
       price: r.total, shape: 'pulsera', metal: 'oro', opts: { stone: r.neo ? 'color' : 'ninguna', thickness: 3 },
     });
   }
@@ -780,11 +887,11 @@ $('[data-espacio]').addEventListener('input', (e) => {
 document.querySelector('[data-editor]').addEventListener('input', (e) => {
   if (!e.target.matches('[data-letra]')) return;
   const it = state.seq.find((x) => x.id === state.sel);
-  if (it) { it.letra = e.target.value.toUpperCase(); e.target.value = it.letra; construir(); pintarStripOnly(); }
+  if (it) { it.letra = limpiarLetras(e.target.value).slice(0, 1); e.target.value = it.letra; construir(); pintarStripOnly(); }
 });
 function pintarStripOnly() {
   const it = state.seq.find((x) => x.id === state.sel);
-  const chip = document.querySelector('.strip__item.is-selected .dot3d--medalla');
+  const chip = document.querySelector('.strip__item.is-selected .dot3d--medalla, .strip__item.is-selected .dot3d--letra');
   if (chip && it) chip.textContent = it.letra;
 }
 
@@ -903,6 +1010,85 @@ strip.addEventListener('keydown', (e) => {
     requestAnimationFrame(() => strip.querySelector('[data-index="' + j + '"]').focus());
   }
 });
+
+/* ------------------------------------------------------------------
+   Arrastrar las cuentas directamente sobre la pulsera 3D
+   (tocar una cuenta la selecciona; arrastrarla la cambia de lugar; arrastrar el fondo gira la vista)
+------------------------------------------------------------------ */
+let arrastre3D = null;
+const rayo = new THREE.Raycaster();
+const puntero = new THREE.Vector2();
+function cuentaBajo(e) {
+  if (SIN_3D || !pulsera) return null;
+  const r = renderer.domElement.getBoundingClientRect();
+  puntero.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  rayo.setFromCamera(puntero, camera);
+  const hit = rayo.intersectObjects([...mallasPorId.values()], true)[0];
+  return hit ? hit.object.userData.itemId : null;
+}
+function sobreAnillo(e) {
+  const r = renderer.domElement.getBoundingClientRect();
+  puntero.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  rayo.setFromCamera(puntero, camera);
+  const p = new THREE.Vector3();
+  if (!rayo.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -geoInfo.Yc), p)) return null;
+  const a = Math.atan2(p.z, p.x);
+  let s = (-a - Math.PI / 2) * geoInfo.Rc;
+  s = ((s % geoInfo.Lc) + geoInfo.Lc) % geoInfo.Lc;
+  return s;
+}
+if (!SIN_3D) {
+  const lienzo = renderer.domElement;
+  host.addEventListener('pointerdown', (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    const id = cuentaBajo(e);
+    if (id == null) return;
+    controls.enabled = false;            // en fase de captura: OrbitControls no alcanza a girar
+    arrastre3D = { id, x0: e.clientX, y0: e.clientY, activo: false };
+    lienzo.setPointerCapture && lienzo.setPointerCapture(e.pointerId);
+  }, true);
+  lienzo.addEventListener('pointermove', (e) => {
+    if (!arrastre3D) {
+      if (!e.buttons) lienzo.style.cursor = cuentaBajo(e) != null ? 'grab' : '';
+      return;
+    }
+    if (!arrastre3D.activo) {
+      if (Math.hypot(e.clientX - arrastre3D.x0, e.clientY - arrastre3D.y0) < 5) return;
+      arrastre3D.activo = true;
+      state.sel = arrastre3D.id;
+      if (controls.autoRotate) { controls.autoRotate = false; $('[data-autorotate]').setAttribute('aria-pressed', 'false'); }
+      lienzo.style.cursor = 'grabbing';
+    }
+    const s = sobreAnillo(e);
+    if (s == null) return;
+    const otros = geoInfo.centros.filter((c) => c.id !== arrastre3D.id);
+    const idx = otros.filter((c) => c.s < s).length;
+    const actual = state.seq.findIndex((it) => it.id === arrastre3D.id);
+    if (actual < 0 || idx === actual) return;
+    const [x] = state.seq.splice(actual, 1);
+    state.seq.splice(idx, 0, x);
+    construir();
+    pintarPanel();
+  });
+  const terminar = () => {
+    if (!arrastre3D) return;
+    const a = arrastre3D;
+    arrastre3D = null;
+    controls.enabled = true;
+    lienzo.style.cursor = '';
+    if (!a.activo) state.sel = state.sel === a.id ? null : a.id;   // fue un toque: seleccionar
+    actualizar(false);
+  };
+  lienzo.addEventListener('pointerup', terminar);
+  lienzo.addEventListener('pointercancel', terminar);
+}
+
+/* Botones rápidos debajo del visor */
+document.querySelector('[data-rapido]').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-add-rapido]');
+  if (b) insertar(b.dataset.addRapido);
+});
+document.querySelector('[data-nombre]').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); ponerNombre(); } });
 
 /* ------------------------------------------------------------------
    Arranque

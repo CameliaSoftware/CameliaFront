@@ -1201,3 +1201,14 @@ a.combo__item { grid-template-columns: 56px 1fr auto; color: inherit; text-decor
   .letrero__sub { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .letrero { transition: none; } }
+
+/* ---------- Pulsera tejida: letras, barra rápida, nombre ---------- */
+.dot3d--letra { display: inline-grid; place-items: center; border-radius: 28%; background: linear-gradient(145deg, #fff3cc, #e2b850 45%, #a97c22); color: #5e440f; font: 600 12px/1 var(--serif); }
+.tj__rapido { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; background: var(--cream); border-radius: 14px; }
+.tj__rapido .chip { height: 34px; font-size: 13px; gap: 6px; display: inline-flex; align-items: center; }
+.tj__rapido .chip:active { transform: scale(.96); }
+.tj__nombre { display: grid; gap: 8px; margin: 12px 0 14px; padding: 14px; border: 1px dashed var(--accent); border-radius: 14px; background: var(--accent-soft); }
+.tj__nombre-fila { display: flex; gap: 8px; }
+.tj__nombre-fila .input { flex: 1; min-width: 0; text-transform: uppercase; letter-spacing: .12em; }
+.tj__nombre-fila .btn { flex: none; }
+@media (max-width: 560px) { .tj__nombre-fila { flex-direction: column; } }

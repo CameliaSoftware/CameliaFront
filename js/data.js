@@ -111,6 +111,7 @@ CAMELIA.ORO18K = {
   densidad: 15.6,           // g/cm³ del oro 18K
   pared: 0.2,               // mm
   medallaGramos: 1.05,      // medalla de 12 mm
+  letraGramos: 0.5,         // letra (dije) de oro 18K de ~7 mm
 };
 
 /* Joyas con peso: el precio sale de peso × precio del gramo (cambia solo si cambia el precio del oro). */
