@@ -128,7 +128,7 @@
      paquetes/<id>/ref/…  fotos reales (referencia, no se publican)
      paquetes/<id>/ia/<rol>-<fecha>.png  propuestas de la IA pendientes de aprobar */
   var ROLES_IA = [['principal', 'Fotografía principal'], ['detalle', 'Fotografía de detalle'], ['premium', 'Presentación premium']];
-  var paq = { id: null, refs: [], propuestas: [], generando: {}, calidad: 'medium', extra: '', blobs: {} };
+  var paq = { id: null, refs: [], propuestas: [], generando: {}, calidad: 'medium', extra: '', blobs: {}, elegidas: { principal: true, detalle: true, premium: true } };
 
   function carpeta(id, sub) { return 'paquetes/' + id + '/' + sub; }
   function listar(ruta) {
@@ -169,11 +169,12 @@
       return todas.length ? C.sb.storage.from('originales').remove(todas) : null;
     }).catch(function () {});
   }
+  var turnoPaq = 0;
   function cargarArchivosPaquete() {
-    var id = editando.id;
-    if (paq.id !== id) paq = { id: id, refs: [], propuestas: [], generando: {}, calidad: paq.calidad, extra: '', blobs: {} };
+    var id = editando.id, turno = ++turnoPaq;
+    if (paq.id !== id) paq = { id: id, refs: [], propuestas: [], generando: {}, calidad: paq.calidad, extra: '', blobs: {}, elegidas: paq.elegidas };
     return Promise.all([listar(carpeta(id, 'ref')).then(firmar), listar(carpeta(id, 'ia')).then(firmar)]).then(function (r) {
-      if (paq.id !== id) return;
+      if (paq.id !== id || turno !== turnoPaq) return;   // llegó una lista más nueva
       paq.refs = r[0];
       paq.propuestas = r[1].map(function (x) { x.rol = x.ruta.split('/').pop().split('-')[0]; return x; }).reverse();
       if (vista === 'paquete') pintarPaquete();
@@ -186,6 +187,7 @@
     var metales = j.variantes.map(function (v) { return v.metal; });
     var metalSel = metales.length === 2 ? 'ambos' : metales[0] || '';
     var hayGen = Object.keys(paq.generando).some(function (k) { return paq.generando[k]; });
+    var cuantas = ROLES_IA.filter(function (r) { return paq.elegidas[r[0]]; }).length;
     raiz.innerHTML =
       '<div class="area__head"><div><button class="link-arrow small" data-volver>← Volver a las joyas</button>' +
         '<span class="label" style="display:block;margin-top:14px">Paquete de fotos</span><h1 class="h2">' + esc(j.nombre) + '</h1>' +
@@ -205,8 +207,11 @@
         '<div class="adm__gen-ctrl">' +
           '<input class="input" data-paq-extra placeholder="Indicación extra (opcional): ej. convertir el metal a plata, fondo satén" value="' + esc(paq.extra) + '">' +
           '<select class="select" data-paq-calidad>' + op([['low', 'Calidad rápida'], ['medium', 'Calidad normal'], ['high', 'Calidad alta']], paq.calidad) + '</select>' +
-          '<button type="button" class="btn btn--primary" data-generar-todas' + (!paq.refs.length || hayGen ? ' disabled' : '') + '>✦ Generar las 3 fotos</button>' +
+          '<button type="button" class="btn btn--primary" data-generar-todas' + (!paq.refs.length || hayGen || !cuantas ? ' disabled' : '') + '>✦ Generar ' + (cuantas === 1 ? '1 foto' : cuantas + ' fotos') + '</button>' +
         '</div>' +
+        '<div class="adm__gen-roles"><span class="small muted">¿Cuáles generar?</span>' + ROLES_IA.map(function (r) {
+          return '<label class="check small"><input type="checkbox" data-rol-elegir="' + r[0] + '"' + (paq.elegidas[r[0]] ? ' checked' : '') + '> ' + r[1] + '</label>';
+        }).join('') + '</div>' +
         '<div class="adm__propuestas">' +
           ROLES_IA.filter(function (r) { return paq.generando[r[0]]; }).map(function (r) {
             return '<figure class="adm__propuesta is-cargando"><div class="adm__propuesta-img"><span class="ia__spinner"></span><span class="small">Haciendo la ' + r[1].toLowerCase() + '… (hasta 1 minuto)</span></div><figcaption><strong class="small">' + r[1] + '</strong></figcaption></figure>';
@@ -221,7 +226,7 @@
                 '<button type="button" class="link-arrow small adm__peligro" data-descartar-prop="' + esc(x.ruta) + '">Descartar</button>' +
               '</div></figcaption></figure>';
           }).join('') +
-          (!paq.propuestas.length && !hayGen ? '<p class="muted small">' + (paq.refs.length ? 'No hay propuestas pendientes. Dale a "Generar las 3 fotos" para hacer nuevas.' : 'Cuando subas las fotos reales, aquí aparecen las propuestas de la IA.') + '</p>' : '') +
+          (!paq.propuestas.length && !hayGen ? '<p class="muted small">' + (paq.refs.length ? 'No hay propuestas pendientes. Elige cuáles quieres y dale a "Generar".' : 'Cuando subas las fotos reales, aquí aparecen las propuestas de la IA.') + '</p>' : '') +
         '</div>' +
       '</section>' +
 
@@ -243,14 +248,18 @@
 
   /* Paso 1: subir fotos reales (la IA arranca solo cuando el admin da "Generar las 3 fotos") */
   function subirReferencias(archivos) {
-    var j = editando, prog = raiz.querySelector('[data-progreso-ref]');
+    var j = editando;
     var lista = [].slice.call(archivos).filter(function (a) { return /^image\//.test(a.type); });
     if (!lista.length) return;
-    prog.hidden = false;
+    enFila(function () { return subirRefsAhora(j, lista); }, '[data-progreso-ref]');
+  }
+  function subirRefsAhora(j, lista) {
     var cadena = Promise.resolve(), errores = [];
     lista.forEach(function (a, i) {
       cadena = cadena.then(function () {
-        prog.textContent = 'Subiendo foto ' + (i + 1) + ' de ' + lista.length + '…';
+        var prog = raiz.querySelector('[data-progreso-ref]');
+        if (prog) prog.hidden = false;
+        if (prog) prog.textContent = 'Subiendo foto ' + (i + 1) + ' de ' + lista.length + '…';
         return procesar(a).then(function (r) {
           var ruta = carpeta(j.id, 'ref') + '/' + crypto.randomUUID() + (r.original.type === 'image/webp' ? '.webp' : '.jpg');
           paq.blobs[ruta] = r.original;
@@ -258,14 +267,14 @@
         }).catch(function (e) { errores.push(e.message); });
       });
     });
-    cadena.then(cargarArchivosPaquete).then(function () {
+    return cadena.then(function () { if (paq.id === j.id) return cargarArchivosPaquete(); }).then(function () {
       if (errores.length) alert('Algunas fotos no se subieron:\n' + errores.join('\n'));
-      if (paq.refs.length) C.avisar('Fotos subidas. Revísalas y, cuando estén bien, dale a "Generar las 3 fotos".');
+      if (paq.refs.length) C.avisar('Fotos subidas. Revísalas y, cuando estén bien, dale a "Generar".');
     });
   }
 
   /* Paso 2: la IA hace la foto principal, la de detalle y la premium (en paralelo) */
-  function generarTodas() { ROLES_IA.forEach(function (r) { generar(r[0]); }); }
+  function generarTodas() { ROLES_IA.forEach(function (r) { if (paq.elegidas[r[0]]) generar(r[0]); }); }
   function generar(rol) {
     var id = editando.id;
     if (!paq.refs.length || paq.generando[rol]) return;
@@ -335,7 +344,7 @@
     ]).then(function (r) {
       r.forEach(function (x) { if (x && x.error) throw x.error; });
       return cargar();
-    }).then(function () { editando = joyas.find(function (x) { return x.id === j.id; }); pintarPaquete(); C.avisar('Paquete guardado.'); })
+    }).then(function () { ir('lista'); C.avisar('Paquete guardado.'); })
       .catch(function (e) { C.avisar('No se pudo guardar: ' + e.message, 'error'); });
   }
 
@@ -595,10 +604,29 @@
     });
   }
 
+  /* Las subidas van en fila: si se elige otra foto mientras una sube, espera a que termine
+     (si corren a la vez, la lista vieja pisa a la nueva y se repite el orden de las fotos) */
+  var colaSubidas = Promise.resolve(), enCola = 0;
+  function enFila(tarea, selProg) {
+    var prog = raiz.querySelector(selProg);
+    if (enCola && prog) { prog.hidden = false; prog.textContent = 'Esperando a que termine la foto anterior…'; }
+    enCola++;
+    var p = colaSubidas.then(tarea);
+    colaSubidas = p.catch(function () {}).then(function () { enCola--; });
+    return p;
+  }
+
   function subir(archivos) {
-    var j = editando, prog = raiz.querySelector('[data-progreso]');
     var lista = [].slice.call(archivos).filter(function (a) { return /^image\//.test(a.type); });
-    if (!lista.length) return Promise.resolve();
+    if (!lista.length) return Promise.resolve(0);
+    var joya = editando;
+    return enFila(function () { return subirAhora(joya, lista); }, '[data-progreso]');
+  }
+
+  function subirAhora(joya, lista) {
+    // Datos frescos: la subida anterior pudo agregar fotos a esta misma joya
+    var j = joyas.find(function (x) { return x.id === joya.id; }) || joya;
+    var prog = raiz.querySelector('[data-progreso]');
     if (prog) prog.hidden = false;
     var hechos = 0, errores = [];
     var orden = j.imagenes.reduce(function (n, f) { return Math.max(n, f.orden); }, 0);
@@ -606,6 +634,7 @@
     var cadena = Promise.resolve();
     lista.forEach(function (a, i) {
       cadena = cadena.then(function () {
+        var prog = raiz.querySelector('[data-progreso]');
         if (prog) prog.textContent = 'Subiendo foto ' + (i + 1) + ' de ' + lista.length + '…';
         return procesar(a).then(function (r) {
           var ext = r.marcada.type === 'image/webp' ? '.webp' : '.jpg';
@@ -629,8 +658,8 @@
       });
     });
     return cadena.then(cargar).then(function () {
-      editando = joyas.find(function (x) { return x.id === j.id; });
-      repintar();
+      // Solo repinta si el admin sigue en esta joya
+      if (editando && editando.id === j.id) { editando = joyas.find(function (x) { return x.id === j.id; }) || editando; repintar(); }
       C.avisar(hechos + ' foto' + (hechos === 1 ? '' : 's') + ' subida' + (hechos === 1 ? '' : 's') + ' con marca de agua.', errores.length ? 'error' : null);
       if (errores.length) alert('Algunas fotos no se subieron:\n' + errores.join('\n'));
       return hechos;
@@ -748,6 +777,12 @@
       if (t.matches('[data-archivos]')) { subir(t.files); t.value = ''; }
       if (t.matches('[data-refs]')) { subirReferencias(t.files); t.value = ''; }
       if (t.matches('[data-paq-calidad]')) paq.calidad = t.value;
+      if (t.matches('[data-rol-elegir]')) {
+        paq.elegidas[t.dataset.rolElegir] = t.checked;
+        var n = ROLES_IA.filter(function (r) { return paq.elegidas[r[0]]; }).length, btn = raiz.querySelector('[data-generar-todas]');
+        btn.textContent = '✦ Generar ' + (n === 1 ? '1 foto' : n + ' fotos');
+        btn.disabled = !n || !paq.refs.length || Object.keys(paq.generando).some(function (k) { return paq.generando[k]; });
+      }
       if (t.matches('[data-foto-tipo]')) {
         C.sb.from('imagenes').update({ tipo: t.value }).eq('id', t.dataset.fotoTipo).then(function (r) {
           C.avisar(r.error ? 'No se pudo cambiar: ' + r.error.message : 'Tipo de foto actualizado.', r.error ? 'error' : null);
