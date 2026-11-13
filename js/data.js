@@ -107,7 +107,7 @@ CAMELIA.DEPARTAMENTOS = ['Amazonas', 'Antioquia', 'Arauca', 'Atlántico', 'Bogot
 CAMELIA.ENVIO = { gratisDesde: 300000, costo: 15000 };
 
 CAMELIA.ORO18K = {
-  precioGramo: 1000000,
+  precioGramo: 900000,
   densidad: 15.6,           // g/cm³ del oro 18K
   pared: 0.2,               // mm
   medallaGramos: 1.05,      // medalla de 12 mm
