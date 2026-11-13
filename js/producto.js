@@ -86,7 +86,8 @@
   var NOTA_IMAGEN = '<p class="gallery__nota">Imagen de referencia. El color puede variar respecto a la joya física y el tamaño mostrado no corresponde al tamaño real.</p>';
 
   function galleryHTML() {
-    var fotos = C.fotosDe(p, metal);
+    var fotos = C.fotosDe(actual(), metal);
+    if (!fotos.length) fotos = C.fotosDe(p, metal);
     if (fotos.length) return galeriaFotos(fotos);
     if (p.model) {
       return '<div class="gallery__thumbs">' + VIEWS_3D.map(function (v, i) {
@@ -115,6 +116,24 @@
 
   /* Complementos: otra joya que se puede sumar con un clic (ej. la cadena + el dije) */
   var extras = {};
+  /* En los juegos, los complementos son las piezas sueltas: se elige una en vez de sumarla */
+  var pieza = null;
+  function esJuego() { return p.cat === 'juegos'; }
+  function actual() { return (pieza && C.getProduct(pieza)) || p; }
+  function piezasHTML() {
+    var lista = complementos().filter(function (c) { return c.metals[metal]; });
+    if (!lista.length) return '';
+    var op = function (x, titulo) {
+      var foto = C.fotosDe(x, metal)[0];
+      var img = foto ? C.imgFoto(foto, '', true) : C.jewelSVG(C.getCategory(x.cat).shape, metal, { variant: x.variant, stone: x.stone });
+      var sel = x === p ? !pieza : pieza === x.id;
+      return '<label class="combo__item"><input type="radio" name="pieza" data-pieza="' + (x === p ? '' : x.id) + '"' + (sel ? ' checked' : '') + '>' +
+        '<span class="combo__img">' + img + '</span>' +
+        '<span class="combo__txt"><strong>' + titulo + '</strong><span class="muted small">' + C.formatCOP(x.metals[metal]) + '</span></span><span></span></label>';
+    };
+    return '<div class="field"><span class="label">¿Qué quieres llevar?</span><div class="combo">' +
+      op(p, 'Juego completo') + lista.map(function (c) { return op(c, 'Solo ' + c.name); }).join('') + '</div></div>';
+  }
   function complementos() {
     return (p.complementos || []).map(C.getProduct).filter(function (c) { return c && C.tieneMetal(c, metal); });
   }
@@ -135,6 +154,7 @@
     }).join('') + '</div><p class="combo__total" data-combo-total hidden></p></div>';
   }
   function pintarTotal() {
+    if (esJuego()) return;
     var el = document.querySelector('[data-combo-total]');
     if (!el) return;
     var sel = complementos().filter(function (c) { return extras[c.id]; });
@@ -154,14 +174,14 @@
       '<div class="info">' +
         '<div><span class="label">' + cat.name + ' · ' + p.sub + '</span>' +
           '<h1 class="h2" style="margin-top:12px">' + p.name + '</h1>' +
-          '<p class="price info__price" style="margin-top:14px">' + C.precioTexto(p.metals[metal]) + '</p>' +
+          '<p class="price info__price" style="margin-top:14px">' + C.precioTexto(actual().metals[metal]) + '</p>' +
           (p.metals[metal] ? '<p class="muted small">Hasta 6 cuotas sin interés · PSE, Nequi y tarjetas</p>'
             : '<p class="muted small">Escríbenos y te damos el precio de esta joya.</p>') + '</div>' +
         '<p>' + (p.texto || p.desc + '. Pieza hecha a mano en Colombia, con acabado pulido y empaque de regalo.') + '</p>' +
         '<div class="field"><span class="label">Metal</span><div class="options">' + metals.map(function (m) {
           return '<button class="option" data-metal-pick="' + m + '" aria-pressed="' + (m === metal) + '"><span class="swatch swatch--' + m + '"></span>' + C.METALS[m].label + '</button>';
         }).join('') + '</div></div>' +
-        complementosHTML() +
+        (esJuego() ? piezasHTML() : complementosHTML()) +
         (hasSize ? '<div class="field"><span class="label">Talla <a href="#" class="muted">Guía de tallas</a></span><div class="options">' +
           [5, 6, 7, 8, 9, 10, 11].map(function (n) {
             return '<button class="option option--size" data-size="' + n + '" aria-pressed="' + (n === size) + '">' + n + '</button>';
@@ -224,6 +244,8 @@
     document.querySelector('[data-product]').addEventListener('change', function (e) {
       var x = e.target.closest('[data-extra]');
       if (x) { extras[x.dataset.extra] = x.checked; pintarTotal(); }
+      var pz = e.target.closest('[data-pieza]');
+      if (pz) { pieza = pz.dataset.pieza || null; fotoSel = 0; render(); }
     });
     document.querySelector('[data-product]').addEventListener('click', function (e) {
       var v = e.target.closest('[data-view]'), m = e.target.closest('[data-metal-pick]'), s = e.target.closest('[data-size]');
@@ -231,12 +253,12 @@
       if (fo) { fotoSel = +fo.dataset.foto; modo3d = false; render(); return; }
       if (e.target.closest('[data-ver3d]')) { modo3d = true; render(); return; }
       if (v) goToView(+v.dataset.view);
-      else if (m) { metal = m.dataset.metalPick; render(); }
+      else if (m) { metal = m.dataset.metalPick; if (pieza && !(C.getProduct(pieza) || {metals: {}}).metals[metal]) pieza = null; render(); }
       else if (s) { size = +s.dataset.size; render(); }
       else if (e.target.closest('[data-buy]')) {
         if (hasSize && !size) { document.querySelector('[data-size-msg]').hidden = false; return; }
-        C.addProductToCart(p, metal, { size: size });
-        complementos().forEach(function (c) { if (extras[c.id]) C.addProductToCart(c, metal); });
+        C.addProductToCart(actual(), metal, { size: size });
+        if (!esJuego()) complementos().forEach(function (c) { if (extras[c.id]) C.addProductToCart(c, metal); });
       }
     });
   }

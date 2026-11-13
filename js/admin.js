@@ -415,7 +415,7 @@
           '<p class="small muted">Sale en "Detalles". El peso y el largo se agregan solos.</p><div class="adm__ficha" data-ficha>' +
           (j.ficha || []).filter(function (f) { return f[0] !== 'Peso' && f[0] !== 'Largo'; }).map(filaFicha).join('') + '</div></section>' +
 
-        '<section class="area__card"><h2 class="h4">Combínala con</h2><p class="small muted">Joyas que el cliente puede agregar con un clic (ej. la cadena para un dije).</p>' +
+        '<section class="area__card"><h2 class="h4">Combínala con</h2><p class="small muted">Joyas que el cliente puede agregar con un clic (ej. la cadena para un dije). En un juego: marca las piezas sueltas (el dije, los topos) y el cliente podrá escoger cuál llevar.</p>' +
           '<div class="adm__combina">' + (otras.length ? otras.map(function (x) {
             return '<label class="check"><input type="checkbox" name="complementos" value="' + esc(x.id) + '"' + ((j.complementos || []).indexOf(x.id) > -1 ? ' checked' : '') + '> ' + esc(x.nombre) + '</label>';
           }).join('') : '<p class="muted small">Aún no hay otras joyas.</p>') + '</div></section>' +
