@@ -106,11 +106,10 @@
         C.jewelSVG(cat.shape, metal, { variant: p.variant, stone: p.stone, angle: ANGLES[view] }) + '</div>';
   }
 
-  /* Ficha técnica: peso (si lo tiene) + los datos propios de la joya */
+  /* Ficha técnica: los datos propios de la joya. El peso no se muestra: solo sirve para calcular el precio */
   function fichaHTML() {
     if (!p.ficha) return 'Metal: ' + C.METALS[metal].label + '. Piedra: ' + C.STONES[p.stone] + '. Hecha a mano en nuestro taller.';
-    var filas = p.ficha.slice();
-    if (p.peso && p.peso[metal]) filas.splice(1, 0, ['Peso', String(p.peso[metal]).replace('.', ',') + ' g']);
+    var filas = p.ficha.filter(function (f) { return !/^peso/i.test(f[0]); });
     return '<dl class="ficha">' + filas.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + f[1] + '</dd></div>'; }).join('') + '</dl>';
   }
 
@@ -131,8 +130,7 @@
         '<span class="link-arrow small">Ver</span></a>';
       return '<label class="combo__item"><input type="checkbox" data-extra="' + c.id + '"' + (extras[c.id] ? ' checked' : '') + '>' +
         '<span class="combo__img">' + img + '</span>' +
-        '<span class="combo__txt"><strong>Agregar ' + c.name + '</strong><span class="muted small">' + C.formatCOP(c.metals[metal]) +
-        (c.peso && c.peso[metal] ? ' · ' + String(c.peso[metal]).replace('.', ',') + ' g' : '') + '</span></span>' +
+        '<span class="combo__txt"><strong>Agregar ' + c.name + '</strong><span class="muted small">' + C.formatCOP(c.metals[metal]) + '</span></span>' +
         '<a class="link-arrow small" href="producto.html?id=' + c.id + '&metal=' + metal + '">Ver</a></label>';
     }).join('') + '</div><p class="combo__total" data-combo-total hidden></p></div>';
   }
