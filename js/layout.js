@@ -499,7 +499,7 @@
         '<form class="newsletter" data-newsletter><label class="label" for="nl-email">Tu correo electrónico</label>' +
         '<div class="newsletter__row"><input id="nl-email" type="email" required placeholder="nombre@correo.com">' +
         '<button class="btn btn--primary" type="submit">Suscribirme</button></div>' +
-        '<p class="muted small" data-nl-msg>Al suscribirte aceptas nuestra política de tratamiento de datos.</p></form>' +
+        '<p class="muted small" data-nl-msg>Al suscribirte aceptas nuestra <a href="privacidad.html">política de tratamiento de datos</a>.</p></form>' +
       '</div></div>' +
       '<div class="container footer__main">' +
         '<div class="footer__brand"><span class="logo__name">CAMELIA</span><p class="cert-line">Oro 18K y plata 925 hechos a mano en Colombia. Todo nuestro oro lleva certificado de autenticidad de por vida.</p>' +
@@ -509,13 +509,13 @@
             '<a class="icon-btn" href="https://wa.me/570000000000" aria-label="WhatsApp">' + C.icon('whatsapp') + '</a></div></div>' +
         '<div><p class="label">Tienda</p><ul>' + shop + '</ul></div>' +
         '<div><p class="label">Hecho para ti</p><ul><li><a href="personaliza-pulsera.html">Personaliza tu pulsera</a></li><li><a href="disena.html">Diseña tu joya</a></li><li><a href="index.html#regalos">Regalos por precio</a></li></ul></div>' +
-        '<div><p class="label">Ayuda</p><ul><li><a href="#">Envíos</a></li><li><a href="#">Cambios y devoluciones</a></li><li><a href="#">Guía de tallas</a></li><li><a href="#">Cuidado de tu joya</a></li></ul></div>' +
-        '<div><p class="label">Marca</p><ul><li><a href="#">Nosotros</a></li><li><a href="#">Contacto</a></li><li><a href="#">Preguntas frecuentes</a></li></ul></div>' +
+        '<div><p class="label">Ayuda</p><ul><li><a href="envios.html">Envíos</a></li><li><a href="cambios.html">Cambios y garantía</a></li><li><a href="#">Guía de tallas</a></li><li><a href="#">Cuidado de tu joya</a></li></ul></div>' +
+        '<div><p class="label">Marca</p><ul><li><a href="#">Nosotros</a></li><li><a href="mailto:contacto@joyascamelia.com">Contacto</a></li><li><a href="#">Preguntas frecuentes</a></li></ul></div>' +
       '</div>' +
       '<div class="container footer__legal">' +
         '<span>© ' + new Date().getFullYear() + ' Camelia · Hecho en Colombia</span>' +
         '<span class="footer__pay"><span>PSE</span><span>Nequi</span><span>Visa</span><span>Mastercard</span></span>' +
-        '<span><a href="#">Privacidad</a> · <a href="#">Términos</a> · <a href="#">SIC</a></span></div>';
+        '<span><a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Términos</a> · <a href="https://www.sic.gov.co" target="_blank" rel="noopener">SIC</a></span></div>';
   }
 
   /* ---------- Aparición suave al hacer scroll ---------- */

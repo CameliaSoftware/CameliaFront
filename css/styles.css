@@ -1333,3 +1333,35 @@ a.combo__item { grid-template-columns: 56px 1fr auto; color: inherit; text-decor
 @media (max-width: 420px) {
   .cats { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ---------- Páginas legales y de ayuda ---------- */
+.legal { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 64px; padding-top: 48px; padding-bottom: var(--section); }
+.legal__nav { position: sticky; top: calc(var(--header-h) + 24px); align-self: start; }
+.legal__nav .label { display: block; margin-bottom: 14px; }
+.legal__nav a { display: block; padding: 8px 0 8px 14px; border-left: 1px solid var(--line); color: var(--ink-2); font-size: 15px; }
+.legal__nav a:hover { color: var(--ink); }
+.legal__nav a[aria-current="page"] { border-left: 2px solid var(--accent); padding-left: 13px; color: var(--ink); font-weight: 500; }
+.prose { max-width: 72ch; color: var(--ink-2); }
+.prose .h2 { color: var(--ink); margin: 8px 0 12px; }
+.prose .legal__fecha { margin-bottom: 32px; }
+.prose h2 { font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.2; color: var(--ink); margin: 40px 0 12px; scroll-margin-top: calc(var(--header-h) + 24px); }
+.prose h3 { font-size: 16px; font-weight: 600; color: var(--ink); margin: 24px 0 8px; }
+.prose p, .prose ul, .prose ol { margin: 0 0 14px; }
+.prose ul { list-style: disc; padding-left: 22px; }
+.prose ol { padding-left: 22px; }
+.prose li { margin-bottom: 6px; }
+.prose a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.prose strong { color: var(--ink); font-weight: 600; }
+.legal__ficha { background: var(--cream); border-radius: var(--radius); padding: 20px 24px; margin: 0 0 24px; }
+.legal__ficha dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 20px; margin: 0; font-size: 15px; }
+.legal__ficha dt { color: var(--muted); }
+.legal__ficha dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+@media (max-width: 900px) {
+  .legal { grid-template-columns: 1fr; gap: 24px; padding-top: 32px; }
+  .legal__nav { position: static; display: flex; flex-wrap: wrap; gap: 8px; }
+  .legal__nav .label { width: 100%; margin-bottom: 4px; }
+  .legal__nav a, .legal__nav a[aria-current="page"] { border: 1px solid var(--line-2); border-radius: var(--pill); padding: 6px 14px; font-size: 14px; }
+  .legal__nav a[aria-current="page"] { border-color: var(--ink); background: var(--ink); color: #fff; }
+  .legal__ficha dl { grid-template-columns: 1fr; gap: 2px; }
+  .legal__ficha dd { margin-bottom: 8px; }
+}

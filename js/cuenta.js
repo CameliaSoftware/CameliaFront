@@ -66,7 +66,7 @@
 
           '<h2 class="h4" style="margin-top:28px">Privacidad</h2>' +
           '<label class="check check--legal"><input type="checkbox" name="acepta_datos"' + (perfil.acepta_datos ? ' checked' : '') + '> ' +
-            '<span>Autorizo a Camelia el tratamiento de mis datos personales para gestionar mis compras, envíos y facturación, según la <a href="#">Política de tratamiento de datos</a> (Ley 1581 de 2012).' +
+            '<span>Autorizo a Camelia el tratamiento de mis datos personales para gestionar mis compras, envíos y facturación, según la <a href="privacidad.html" target="_blank">Política de tratamiento de datos</a> (Ley 1581 de 2012).' +
             (perfil.acepta_datos_fecha ? ' <em class="muted">Autorizado el ' + new Date(perfil.acepta_datos_fecha).toLocaleDateString('es-CO') + '.</em>' : '') + '</span></label>' +
           '<label class="check check--legal"><input type="checkbox" name="acepta_novedades"' + (perfil.acepta_novedades ? ' checked' : '') + '> ' +
             '<span>Quiero recibir novedades, lanzamientos y ofertas por correo o WhatsApp.</span></label>' +

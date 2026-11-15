@@ -166,7 +166,7 @@ CAMELIA.formatCOP = function (n) {
 
 /* Datos de contacto. Con número de WhatsApp (código de país + número, ej. '573001234567')
    las consultas van por WhatsApp; sin número, por correo. */
-CAMELIA.CONTACTO = { whatsapp: '', correo: 'joyascameliacorp@gmail.com' };
+CAMELIA.CONTACTO = { whatsapp: '', correo: 'contacto@joyascamelia.com' };
 
 /* Una joya puede estar publicada sin precio todavía: su metal existe con precio 0. */
 CAMELIA.tieneMetal = function (p, m) { return !!p && p.metals[m] !== undefined; };

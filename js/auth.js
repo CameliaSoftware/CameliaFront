@@ -62,7 +62,7 @@
               '<li>' + C.icon('truck') + 'Tus direcciones listas para comprar más rápido</li>' +
               '<li>' + C.icon('seal') + 'Tus pedidos y certificados de oro 18K en un solo lugar</li>' +
             '</ul>' +
-            '<p class="small muted login__legal">No necesitas contraseña: entras con tu cuenta de Google. Al continuar aceptas los <a href="#">Términos</a> y la <a href="#">Política de tratamiento de datos</a>.</p>' +
+            '<p class="small muted login__legal">No necesitas contraseña: entras con tu cuenta de Google. Al continuar aceptas los <a href="terminos.html" target="_blank">Términos</a> y la <a href="privacidad.html" target="_blank">Política de tratamiento de datos</a>.</p>' +
             '<p class="small login__error" data-login-error hidden></p>' +
           '</div>' +
         '</div>');

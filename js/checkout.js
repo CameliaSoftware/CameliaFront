@@ -78,8 +78,8 @@
           (t.envio ? '<p class="small muted">Envío gratis en compras desde ' + C.formatCOP(C.ENVIO.gratisDesde) + '.</p>' : '') +
           '<div class="panel__price"><span class="muted">Total (IVA incluido)</span><span class="price">' + C.formatCOP(t.total) + '</span></div>' +
           '<label class="check check--legal"><input type="checkbox" data-acepta-datos' + (perfil.acepta_datos ? ' checked' : '') + '> ' +
-            '<span>Autorizo el tratamiento de mis datos personales según la <a href="#">Política de tratamiento de datos</a> (Ley 1581 de 2012).</span></label>' +
-          '<label class="check check--legal"><input type="checkbox" data-acepta-terminos> <span>Acepto los <a href="#">Términos y condiciones</a> y la política de cambios.</span></label>' +
+            '<span>Autorizo el tratamiento de mis datos personales según la <a href="privacidad.html" target="_blank">Política de tratamiento de datos</a> (Ley 1581 de 2012).</span></label>' +
+          '<label class="check check--legal"><input type="checkbox" data-acepta-terminos> <span>Acepto los <a href="terminos.html" target="_blank">Términos y condiciones</a> y la <a href="cambios.html" target="_blank">política de cambios</a>.</span></label>' +
           '<p class="form-error" data-co-error hidden></p>' +
           '<button class="btn btn--primary btn--block" data-confirmar>' + C.icon('whatsapp') + 'Confirmar pedido por WhatsApp</button>' +
           '<p class="small muted">Te escribimos para confirmar y enviarte el link de pago (PSE, Nequi o tarjeta).</p>' +
