@@ -10,10 +10,10 @@
     sub: params.get('sub') || '',
     metal: params.getAll('metal'),
     piedra: params.getAll('piedra'),
-    precio: params.getAll('precio'),
+    precio: params.getAll('precio').filter(function (id) { return C.PRICE_RANGES.some(function (r) { return r.id === id; }); }),
     custom: params.get('custom') === '1',
     favoritos: params.get('favoritos') === '1',
-    sort: 'destacados',
+    sort: params.get('orden') === 'nuevo' ? 'nuevo' : 'destacados',
   };
 
   function priceFor(p) {
@@ -36,12 +36,14 @@
   }
 
   function group(title, key, options) {
-    return '<div class="filters__group"><span class="label">' + title + '</span>' + options.map(function (o) {
+    var html = options.map(function (o) {
       var count = C.PRODUCTS.filter(function (p) { return matches(p, key) && o.test(p); }).length;
       var checked = key === 'custom' ? f.custom : key === 'sub' ? f.sub === o.id : f[key].indexOf(o.id) > -1;
+      if (!count && !checked) return '';
       return '<label class="check"><input type="checkbox" data-key="' + key + '" value="' + o.id + '"' + (checked ? ' checked' : '') + '>' +
         (o.swatch ? '<span class="swatch swatch--' + o.swatch + '"></span>' : '') + o.label + '<span class="count">' + count + '</span></label>';
-    }).join('') + '</div>';
+    }).join('');
+    return html ? '<div class="filters__group"><span class="label">' + title + '</span>' + html + '</div>' : '';
   }
 
   /* Subcategorías del tipo elegido, según el metal (Oro y Plata tienen listas distintas) */
@@ -51,6 +53,7 @@
     var metales = f.metal.length ? f.metal : ['oro', 'plata'];
     var subs = [];
     metales.forEach(function (m) { cat.subs[m].forEach(function (s) { if (subs.indexOf(s) < 0) subs.push(s); }); });
+    subs = subs.filter(function (s) { return s === f.sub || C.PRODUCTS.some(function (p) { return p.cat === cat.id && p.sub === s; }); });
     if (f.sub && subs.indexOf(f.sub) < 0) subs.push(f.sub);
     if (subs.length < 2) return '';
     return group('Categoría', 'sub', subs.map(function (s) {
@@ -60,9 +63,7 @@
 
   function renderFilters() {
     document.querySelector('[data-filter-groups]').innerHTML =
-      group('Tipo de joya', 'cat', C.CATEGORIES.filter(function (c) {
-        return !f.metal.length || f.metal.some(function (m) { return c.subs[m].length; });
-      }).map(function (c) {
+      group('Tipo de joya', 'cat', C.CATEGORIES.map(function (c) {
         return { id: c.id, label: c.shortName || c.name, test: function (p) { return p.cat === c.id; } };
       })) +
       subGroup() +
@@ -84,13 +85,14 @@
     if (f.sort === 'menor') list.sort(function (a, b) { return priceFor(a) - priceFor(b); });
     if (f.sort === 'mayor') list.sort(function (a, b) { return priceFor(b) - priceFor(a); });
     if (f.sort === 'nombre') list.sort(function (a, b) { return a.name.localeCompare(b.name, 'es'); });
+    if (f.sort === 'nuevo') list.sort(C.porNovedad);
 
     var preferred = f.metal.length === 1 ? f.metal[0] : null;
     var box = document.querySelector('[data-results]');
     box.innerHTML = list.length ? list.map(function (p) { return C.productCard(p, preferred); }).join('')
       : '<div class="empty" style="grid-column:1/-1"><p class="h4 serif">No hay joyas con estos filtros</p>' +
-        '<p class="muted">Prueba quitando alguno, o crea exactamente la que buscas.</p>' +
-        '<a class="btn btn--primary" href="disena.html">Diseñar mi joya</a></div>';
+        '<p class="muted">Prueba quitando alguno, o escríbenos y te ayudamos a encontrarla.</p>' +
+        '<a class="btn btn--primary" href="categoria.html">Ver todas las joyas</a></div>';
     document.querySelector('[data-count]').textContent = list.length + (list.length === 1 ? ' joya' : ' joyas');
     C.observeReveal(box);
 
@@ -111,14 +113,21 @@
   function renderHead() {
     var cat = f.cat.length === 1 ? C.getCategory(f.cat[0]) : null;
     var metal = f.metal.length === 1 ? C.METALS[f.metal[0]].label : '';
-    var base = f.sub || (cat ? cat.name : '');
+    /* Varias categorías juntas: usa el nombre del menú (ej. "Collares y dijes") */
+    var delMenu = f.cat.length > 1 && C.MENU.find(function (m) { return m.cats && m.cats.length === f.cat.length && m.cats.every(function (c) { return f.cat.indexOf(c) > -1; }); });
+    var nombreCats = delMenu ? delMenu.label : f.cat.map(function (id) { return C.getCategory(id).name; }).join(' y ');
+    var base = f.sub || nombreCats;
     var title = f.favoritos ? 'Mis favoritos'
       : base ? base + (metal ? ' en ' + metal : '')
-      : metal ? 'Joyas en ' + metal : 'Todas las joyas';
+      : metal ? 'Joyas en ' + metal
+      : f.sort === 'nuevo' ? 'Novedades' : 'Todas las joyas';
     document.querySelector('[data-title]').textContent = title;
-    document.querySelector('[data-crumb]').textContent = [metal, cat ? cat.name : ''].filter(Boolean).join(' · ') || 'Joyas';
+    document.querySelector('[data-crumb]').textContent = [nombreCats, metal].filter(Boolean).join(' · ') || (f.sort === 'nuevo' ? 'Novedades' : 'Joyas');
     document.title = title + ' · Camelia';
-    if (cat) document.querySelector('[data-design-link]').href = cat.id === 'pulseras' ? 'personaliza-pulsera.html' : 'disena.html?tipo=' + cat.shape;
+    var lista = C.PRODUCTS.filter(function (p) { return matches(p); }), n = lista.length;
+    var hayOro = lista.some(function (p) { return p.metals.oro && (!f.metal.length || f.metal.indexOf('oro') > -1); });
+    document.querySelector('[data-subtitle]').textContent = n + (n === 1 ? ' joya' : ' joyas') +
+      (metal ? ' en ' + metal : '') + ', hechas en Colombia.' + (hayOro ? ' En oro, el precio sale del peso de cada pieza.' : '');
     var promo = document.querySelector('[data-tj-promo]');
     if (cat && cat.id === 'pulseras' && !promo) {
       document.querySelector('.page-head .container').insertAdjacentHTML('beforeend',
@@ -137,6 +146,7 @@
     f.precio.forEach(function (v) { q.append('precio', v); });
     if (f.custom) q.set('custom', '1');
     if (f.favoritos) q.set('favoritos', '1');
+    if (f.sort === 'nuevo') q.set('orden', 'nuevo');
     var s = q.toString();
     history.replaceState(null, '', location.pathname + (s ? '?' + s : ''));
   }
@@ -174,7 +184,8 @@
       update();
     });
 
-    document.querySelector('[data-sort]').addEventListener('change', function (e) { f.sort = e.target.value; renderResults(); });
+    document.querySelector('[data-sort]').addEventListener('change', function (e) { f.sort = e.target.value; update(); });
+    document.querySelector('[data-sort]').value = f.sort;
 
     /* Filtros en móvil: panel lateral */
     var panel = document.querySelector('[data-filters]');

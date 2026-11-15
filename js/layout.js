@@ -51,91 +51,104 @@
   C.state = state;
 
   /* ---------- Encabezado ---------- */
+  /* Menú principal por tipo de joya. El metal, la piedra y el precio son filtros dentro de cada sección.
+     Los que tienen `cats` abren un menú desplegable y se esconden si no hay joyas publicadas de ese tipo. */
+  C.MENU = [
+    { label: 'Novedades', href: 'categoria.html?orden=nuevo' },
+    { label: 'Anillos', cats: ['anillos', 'argollas'] },
+    { label: 'Aretes', cats: ['aretes'] },
+    { label: 'Collares y dijes', cats: ['dijes', 'cadenas'] },
+    { label: 'Pulseras', cats: ['pulseras'] },
+    { label: 'Juegos', cats: ['juegos'] },
+    { label: 'Regalos', href: 'index.html#regalos' },
+    { label: 'Personaliza tu pulsera', href: 'personaliza-pulsera.html', cta: true },
+  ];
+  C.urlCats = function (cats, extra) {
+    return 'categoria.html?' + cats.map(function (c) { return 'cat=' + c; }).join('&') + (extra ? '&' + extra : '');
+  };
+  function deCats(cats) { return C.PRODUCTS.filter(function (p) { return cats.indexOf(p.cat) > -1; }); }
+
   function headerHTML() {
-    var nav = ['oro', 'plata'].map(function (metal) {
-      return '<li class="nav__item" data-grupo="' + metal + '">' +
-        '<a class="nav__link" href="categoria.html?metal=' + metal + '" aria-haspopup="true" aria-expanded="false">' +
-        '<i class="dot dot--' + metal + '"></i>' + C.METALS[metal].label + C.icon('chevron', 'nav__chev') + '</a></li>';
-    }).join('') +
-      '<li class="nav__item"><a class="nav__link" href="personaliza-pulsera.html">Personaliza tu pulsera</a></li>';
+    var nav = C.MENU.map(function (m, i) {
+      if (!m.cats) return '<li class="nav__item"><a class="nav__link' + (m.cta ? ' nav__link--cta' : '') + '" href="' + m.href + '">' + m.label + '</a></li>';
+      return '<li class="nav__item" data-grupo="' + i + '">' +
+        '<a class="nav__link" href="' + C.urlCats(m.cats) + '" aria-haspopup="true" aria-expanded="false">' + m.label + '</a></li>';
+    }).join('');
 
     return '' +
       '<div class="topbar"><div class="container topbar__inner">' +
         '<span class="topbar__left">' + C.icon('pin') + 'Hecha en Colombia</span>' +
-        '<span class="topbar__center">✦ Oro 18K certificado de por vida · Envío gratis desde $300.000</span>' +
+        '<span class="topbar__center">Envío gratis desde $300.000 · Hasta 6 cuotas sin interés · Oro 18K certificado de por vida</span>' +
         '<a class="topbar__right" href="https://wa.me/570000000000" target="_blank" rel="noopener">' + C.icon('whatsapp') + 'Escríbenos</a>' +
       '</div></div>' +
       '<div class="masthead"><div class="container masthead__inner">' +
         '<button class="icon-btn masthead__menu" data-open-mobile aria-label="Abrir menú">' + C.icon('menu') + '</button>' +
-        '<div class="metal-switch" role="group" aria-label="Ver joyas en">' +
-          '<span class="metal-switch__thumb" aria-hidden="true"></span>' +
-          '<button type="button" data-metal="plata">Plata</button>' +
-          '<button type="button" data-metal="oro">Oro</button>' +
-        '</div>' +
+        '<button type="button" class="masthead__buscar" data-open-search>' + C.icon('search') + '<span>Buscar anillos, cruces, topos…</span></button>' +
         '<a class="logo" href="index.html" aria-label="Camelia, inicio">' +
           '<span class="logo__name">CAMELIA</span><span class="logo__tag">Joyería colombiana</span></a>' +
         '<div class="masthead__actions">' +
-          '<button class="icon-btn" data-open-search aria-label="Buscar">' + C.icon('search') + '</button>' +
+          '<button class="icon-btn masthead__lupa" data-open-search aria-label="Buscar">' + C.icon('search') + '</button>' +
           '<a class="icon-btn hide-sm" href="categoria.html?favoritos=1" aria-label="Favoritos">' + C.icon('heart') + '<span class="badge-count" data-fav-count hidden></span></a>' +
           '<button class="icon-btn" data-cuenta aria-label="Entrar o crear cuenta">' + C.icon('user') + '</button>' +
           '<button class="icon-btn" data-open-cart aria-label="Bolsa de compras">' + C.icon('bag') + '<span class="badge-count" data-cart-count hidden></span></button>' +
         '</div>' +
       '</div></div>' +
-      '<div class="mobile-metal"><div class="metal-switch" role="group" aria-label="Ver joyas en">' +
-        '<span class="metal-switch__thumb" aria-hidden="true"></span>' +
-        '<button type="button" data-metal="plata">Plata</button><button type="button" data-metal="oro">Oro</button></div></div>' +
       '<nav class="nav" aria-label="Categorías"><div class="container">' +
-        '<ul class="nav__list">' + nav +
-          '<li class="nav__item"><a class="nav__link nav__link--cta" href="disena.html">Diseña tu joya ✦</a></li>' +
-        '</ul></div>' +
+        '<ul class="nav__list">' + nav + '</ul></div>' +
         '<div class="mega" hidden><div class="container mega__inner" data-mega-content></div></div>' +
       '</nav>';
   }
 
-  /* Contenido del mega menú, igual de ordenado que en Kevin's: categoría · metal · piedra/precio · destacados */
-  /* Ícono pequeño de joya para cada opción del menú (como los íconos de Kevin's) */
-  var VARIANTS = ['clasica', 'minimal', 'torcida', 'geometrica', 'organica', 'sello'];
-  function miniJewel(shape, i, metal, stone) {
-    return '<span class="mega__ico">' + C.jewelSVG(shape, metal || 'plata', { variant: VARIANTS[i % VARIANTS.length], stone: stone }) + '</span>';
+  /* Cuenta joyas por una propiedad y devuelve [[valor, cantidad], ...] en orden de aparición */
+  function contar(lista, fn) {
+    var orden = [], n = {};
+    lista.forEach(function (p) { [].concat(fn(p)).forEach(function (v) { if (!v) return; if (!(v in n)) { n[v] = 0; orden.push(v); } n[v]++; }); });
+    return orden.map(function (v) { return [v, n[v]]; });
+  }
+  C.contarJoyas = contar;
+  /* Las más nuevas primero (las que no tienen fecha van al final) */
+  C.porNovedad = function (a, b) { return String(b.creado || '').localeCompare(String(a.creado || '')); };
+  /* "Nuevo": solo las 8 joyas más recientes, y solo si llegaron en los últimos 30 días */
+  var nuevas = null;
+  C.esNueva = function (p) {
+    if (!nuevas) nuevas = C.PRODUCTS.filter(function (x) { return x.creado; }).sort(C.porNovedad).slice(0, 8).map(function (x) { return x.id; });
+    return nuevas.indexOf(p.id) > -1 && Date.now() - new Date(p.creado).getTime() < 30 * 864e5;
+  };
+  document.addEventListener('catalogochange', function () { nuevas = null; });
+
+  /* Menú desplegable de un tipo de joya: por metal, por tipo, por piedra y dos joyas nuevas con foto */
+  function megaHTML(i) {
+    var m = C.MENU[i], lista = deCats(m.cats);
+    var link = function (extra, txt, n) { return '<li><a href="' + C.urlCats(m.cats, extra) + '">' + txt + (n != null ? '<em>' + n + '</em>' : '') + '</a></li>'; };
+    var metales = contar(lista, function (p) { return Object.keys(p.metals); });
+    var cols = ['<div class="mega__col"><p class="label">Por metal</p><ul class="mega__list">' +
+      metales.map(function (x) { return link('metal=' + x[0], C.METALS[x[0]].label, x[1]); }).join('') +
+      link('', 'Ver todo', lista.length) + '</ul></div>'];
+    var conJoyas = contar(lista, function (p) { return p.cat; });
+    var tipos = conJoyas.length > 1
+      ? conJoyas.map(function (x) { var c = C.getCategory(x[0]); return '<li><a href="' + C.urlCats([x[0]]) + '">' + c.name + '<em>' + x[1] + '</em></a></li>'; })
+      : contar(lista, function (p) { return p.sub; }).map(function (x) { return link('sub=' + encodeURIComponent(x[0]), x[0], x[1]); });
+    if (tipos.length > 1) cols.push('<div class="mega__col"><p class="label">Por tipo</p><ul class="mega__list">' + tipos.join('') + '</ul></div>');
+    var piedras = contar(lista, function (p) { return p.stone; });
+    if (piedras.length > 1) cols.push('<div class="mega__col"><p class="label">Por piedra</p><ul class="mega__list">' +
+      piedras.map(function (x) { return link('piedra=' + x[0], C.STONES[x[0]], x[1]); }).join('') + '</ul></div>');
+    var fotos = lista.filter(function (p) { return p.fotos && p.fotos.length && p.metals[C.displayMetal(p)]; }).sort(C.porNovedad).slice(0, 2);
+    return '<div class="mega__grid">' + cols.join('') +
+      '<div class="mega__fotos">' + fotos.map(function (p) {
+        var met = C.displayMetal(p);
+        return '<a class="mega__foto" href="producto.html?id=' + p.id + '&metal=' + met + '">' + C.imgFoto(C.fotosDe(p, met)[0]) +
+          '<span>' + p.name + '</span><span class="muted small">' + C.precioTexto(p.metals[met]) + '</span></a>';
+      }).join('') + '</div></div>';
   }
 
-  /* Piedra sugerida para el ícono según el nombre de la subcategoría */
-  function piedraDe(sub) {
-    return /esmeralda/i.test(sub) ? 'color' : /diamante|compromiso/i.test(sub) ? 'circon' : undefined;
-  }
-  function urlCat(metal, cat, sub) {
-    return 'categoria.html?metal=' + metal + '&cat=' + cat + (sub ? '&sub=' + encodeURIComponent(sub) : '');
-  }
-
-  /* Mega menú de un metal: una columna por tipo de joya con sus subcategorías.
-     Los tipos con pocas opciones (cadenas, pulseras, argollas, juegos) se apilan en una sola columna. */
-  function megaHTML(metal) {
-    var cats = C.categoriasDe(metal);
-    var grandes = cats.filter(function (c) { return ['anillos', 'aretes', 'dijes'].indexOf(c.id) > -1; });
-    var chicas = cats.filter(function (c) { return grandes.indexOf(c) < 0; });
-    function bloque(cat) {
-      return '<p class="mega__title"><a href="' + urlCat(metal, cat.id) + '">' + cat.name + '</a></p><ul class="mega__list">' +
-        cat.subs[metal].map(function (s, i) {
-          return '<li><a href="' + urlCat(metal, cat.id, s) + '">' + miniJewel(cat.shape, i, metal, piedraDe(s)) + s + '</a></li>';
-        }).join('') + '</ul>';
-    }
-    /* Si un tipo tiene una sola opción con su mismo nombre (Pulseras → Pulseras), se muestra una vez, como enlace directo */
-    var unica = function (c) { var s = c.subs[metal]; return s.length === 1 && s[0].toLowerCase() === (c.shortName || c.name).toLowerCase(); };
-    var sueltas = chicas.filter(unica);
-    var cols = grandes.map(function (c) { return '<div class="mega__col">' + bloque(c) + '</div>'; });
-    var pila = chicas.filter(function (c) { return !unica(c); }).map(bloque);
-    if (sueltas.length) pila.push('<p class="mega__title">Más joyas</p><ul class="mega__list">' + sueltas.map(function (c, i) {
-      return '<li><a href="' + urlCat(metal, c.id, c.subs[metal][0]) + '">' + miniJewel(c.shape, i, metal) + c.name + '</a></li>';
-    }).join('') + '</ul>');
-    if (pila.length) cols.push('<div class="mega__col">' + pila.join('<div class="mega__label-gap"></div>') + '</div>');
-    var destacado = C.PRODUCTS.find(function (p) { return p.metals[metal] && p.model; }) || C.PRODUCTS.find(function (p) { return p.metals[metal]; });
-    var shape = destacado ? C.getCategory(destacado.cat).shape : 'anillo';
-    return '<div class="mega__grid" style="--cols:' + cols.length + '">' + cols.join('') +
-      '<div class="mega__feature">' +
-        '<a class="mega__promo" href="categoria.html?metal=' + metal + '">' + C.jewelSVG(shape, metal, { variant: destacado && destacado.variant, stone: destacado && destacado.stone }) + '</a>' +
-        '<a class="mega__more" href="categoria.html?metal=' + metal + '">Ver todo en ' + C.METALS[metal].label + ' ' + C.icon('chevron', 'icon--right') + '</a>' +
-        (metal === 'oro' ? '<span class="small muted">' + C.CERTIFICADO + '</span>' : '') +
-        '<a class="link-arrow" href="disena.html">o diseña tu joya desde cero ' + C.icon('arrow') + '</a></div></div>';
+  /* Esconde del menú los tipos de joya que aún no tienen joyas publicadas */
+  function podarMenu() {
+    document.querySelectorAll('[data-grupo]').forEach(function (li) {
+      li.hidden = !deCats(C.MENU[+li.dataset.grupo].cats).length;
+    });
+    document.querySelectorAll('[data-mgrupo]').forEach(function (a) {
+      a.hidden = !deCats(C.MENU[+a.dataset.mgrupo].cats).length;
+    });
   }
 
   function initMegaMenu(root) {
@@ -182,28 +195,16 @@
 
   /* ---------- Menú móvil ---------- */
   function mobileHTML() {
-    var cats = ['oro', 'plata'].map(function (metal) {
-      return '<details class="mnav__group"><summary>' + C.METALS[metal].label + C.icon('chevron') + '</summary><div class="mnav__body">' +
-        '<a class="mnav__todo" href="categoria.html?metal=' + metal + '">Ver todo en ' + C.METALS[metal].label + '</a>' +
-        (function () {
-          var unicas = [];
-          var html = C.categoriasDe(metal).map(function (cat) {
-            var subs = cat.subs[metal];
-            if (subs.length === 1 && subs[0].toLowerCase() === (cat.shortName || cat.name).toLowerCase()) { unicas.push(cat); return ''; }
-            return '<p class="mnav__tipo"><a href="' + urlCat(metal, cat.id) + '">' + cat.name + '</a></p><ul>' +
-              subs.map(function (s) { return '<li><a href="' + urlCat(metal, cat.id, s) + '">' + s + '</a></li>'; }).join('') + '</ul>';
-          }).join('');
-          if (unicas.length) html += '<p class="mnav__tipo">Más joyas</p><ul>' + unicas.map(function (c) {
-            return '<li><a href="' + urlCat(metal, c.id, c.subs[metal][0]) + '">' + c.name + '</a></li>';
-          }).join('') + '</ul>';
-          return html;
-        })() + '</div></details>';
-    }).join('') +
-      '<a class="mnav__link" href="personaliza-pulsera.html">Personaliza tu pulsera tejida</a>';
+    var links = C.MENU.map(function (m, i) {
+      var href = m.cats ? C.urlCats(m.cats) : m.href;
+      return '<a class="mnav__link' + (m.cta ? ' mnav__link--cta' : '') + '" href="' + href + '"' + (m.cats ? ' data-mgrupo="' + i + '"' : '') + '>' + m.label + '</a>';
+    }).join('');
     return '<div class="sheet sheet--full" data-mobile-nav hidden>' +
       '<div class="sheet__head"><span class="logo__name">CAMELIA</span>' +
       '<button class="icon-btn" data-close aria-label="Cerrar menú">' + C.icon('close') + '</button></div>' +
-      '<nav class="mnav">' + cats + '<a class="mnav__cta" href="disena.html">Diseña tu joya ✦</a></nav>' +
+      '<nav class="mnav">' + links +
+        '<div class="mnav__metales"><a href="categoria.html?metal=oro"><i class="dot dot--oro"></i>Todo en oro 18K</a><a href="categoria.html?metal=plata"><i class="dot dot--plata"></i>Todo en plata 925</a></div>' +
+      '</nav>' +
       '<div class="mnav__foot"><a href="cuenta.html" data-cuenta-texto>Mi cuenta</a><a href="categoria.html?favoritos=1">Favoritos</a><a href="https://wa.me/570000000000">WhatsApp</a></div></div>';
   }
 
@@ -223,7 +224,7 @@
     function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
     function render() {
       var q = norm(input.value.trim());
-      if (!q) { results.innerHTML = '<p class="muted">Sugerencias: anillo, perla, oro, argollas</p>'; return; }
+      if (!q) { results.innerHTML = '<p class="muted">Sugerencias: anillo, cruz, topos, oro, esmeralda</p>'; return; }
       var hits = C.PRODUCTS.filter(function (p) {
         var cat = C.getCategory(p.cat);
         var text = norm([p.name, p.desc, cat.name, p.sub, Object.keys(p.metals).map(function (m) { return C.METALS[m].label; }).join(' ')].join(' '));
@@ -232,11 +233,12 @@
       results.innerHTML = hits.length
         ? hits.slice(0, 6).map(function (p) {
             var m = C.displayMetal(p, state.metal);
-            return '<a class="search__hit" href="producto.html?id=' + p.id + '"><span class="search__img">' +
-              C.jewelSVG(C.getCategory(p.cat).shape, m, { variant: p.variant, stone: p.stone }) + '</span>' +
+            var foto = C.fotosDe(p, m)[0];
+            return '<a class="search__hit" href="producto.html?id=' + p.id + '&metal=' + m + '"><span class="search__img">' +
+              (foto ? C.imgFoto(foto) : C.jewelSVG(C.getCategory(p.cat).shape, m, { variant: p.variant, stone: p.stone })) + '</span>' +
               '<span><strong>' + p.name + '</strong><br><span class="muted">' + C.METALS[m].label + ' · ' + C.precioTexto(p.metals[m]) + '</span></span></a>';
           }).join('')
-        : '<p class="muted">No encontramos “' + input.value.replace(/</g, '&lt;') + '”. ¿Y si la diseñas? <a class="link-arrow" href="disena.html">Diseñar ' + C.icon('arrow') + '</a></p>';
+        : '<p class="muted">No encontramos “' + input.value.replace(/</g, '&lt;') + '”. Escríbenos por WhatsApp y te ayudamos a encontrarla. <a class="link-arrow" href="categoria.html">Ver todas las joyas ' + C.icon('arrow') + '</a></p>';
     }
     input.addEventListener('input', render);
     document.querySelectorAll('[data-open-search]').forEach(function (b) {
@@ -260,12 +262,12 @@
     var list = document.querySelector('[data-cart-items]');
     var total = 0;
     if (!state.cart.length) {
-      list.innerHTML = '<div class="empty"><p class="h4 serif">Tu bolsa está vacía</p><p class="muted">Explora la colección o crea una pieza única.</p>' +
+      list.innerHTML = '<div class="empty"><p class="h4 serif">Tu bolsa está vacía</p><p class="muted">Mira las novedades o busca por tipo de joya.</p>' +
         '<a class="btn btn--ghost" href="categoria.html">Ver joyas</a></div>';
     } else {
       list.innerHTML = state.cart.map(function (item, i) {
         total += item.price * item.qty;
-        return '<div class="cart-item"><div class="cart-item__img">' + C.jewelSVG(item.shape, item.metal, item.opts) + '</div>' +
+        return '<div class="cart-item"><div class="cart-item__img' + (item.img ? ' cart-item__img--foto' : '') + '">' + (item.img ? '<img src="' + item.img + '" alt="">' : C.jewelSVG(item.shape, item.metal, item.opts)) + '</div>' +
           '<div class="cart-item__info"><strong>' + item.name + '</strong><span class="muted small">' + item.detail + '</span>' +
           '<div class="qty"><button data-qty="' + i + '" data-d="-1" aria-label="Quitar uno">−</button><span>' + item.qty + '</span>' +
           '<button data-qty="' + i + '" data-d="1" aria-label="Agregar uno">+</button></div></div>' +
@@ -296,6 +298,7 @@
       detail: C.METALS[metal].label + (extra.size ? ' · Talla ' + extra.size : ''),
       price: product.metals[metal],
       shape: cat.shape, metal: metal,
+      img: (C.fotosDe(product, metal)[0] || {}).url || null,
       opts: { variant: product.variant, stone: product.stone },
     });
   };
@@ -347,10 +350,9 @@
   }
   C.openLayer = openLayer;
 
-  /* ---------- Switch Plata | Oro ---------- */
+  /* ---------- Metal preferido (qué precio se muestra primero) ---------- */
   function applyMetal(metal, silent) {
-    state.metal = metal;
-    document.documentElement.dataset.metal = metal;
+    state.metal = metal;   // solo decide qué precio mostrar primero; la tienda tiene un solo estilo
     document.querySelectorAll('.metal-switch button').forEach(function (b) {
       b.setAttribute('aria-pressed', b.dataset.metal === metal);
     });
@@ -416,7 +418,7 @@
     var ficha = Array.isArray(r.ficha) ? r.ficha.slice() : null;
     if (largo && ficha && !ficha.some(function (f) { return f[0] === 'Largo'; })) ficha.splice(1, 0, ['Largo', String(largo).replace('.', ',') + ' cm']);
     return {
-      id: r.id, name: r.nombre, cat: r.categoria, sub: r.subcategoria || '', variant: r.figura || 'clasica',
+      id: r.id, name: r.nombre, cat: r.categoria, creado: r.creado || null, sub: r.subcategoria || '', variant: r.figura || 'clasica',
       desc: r.descripcion || '', texto: r.texto || null, ficha: ficha, complementos: r.complementos || null,
       metals: metals, peso: Object.keys(peso).length ? peso : null, stone: r.piedra || 'ninguna', custom: !!r.personalizable,
       model: r.modelo_3d || null, detalle: r.detalle_3d || null,
@@ -469,7 +471,7 @@
     return '<article class="card reveal"><div class="card__frame">' +
       '<a class="card__media" href="producto.html?id=' + p.id + '&metal=' + m + '">' +
         vistasTarjeta(p, cat, m) +
-        '<span class="tag"><i class="dot dot--' + m + '"></i>' + C.METALS[m].label + '</span>' +
+        (C.esNueva(p) ? '<span class="tag tag--nuevo">Nuevo</span>' : '') +
         (p.custom ? '<span class="tag tag--soft">Personalizable</span>' : '') +
         (p.model ? '<span class="tag tag--3d">' + C.icon('rotate') + '3D</span>' : '') +
       '</a>' +
@@ -477,7 +479,7 @@
       (p.metals[m] ? '<button class="card__add" data-add="' + p.id + '" data-metal="' + m + '">Agregar a la bolsa</button>'
         : '<a class="card__add" href="' + C.enlaceConsulta(p, m) + '" target="_blank" rel="noopener">Consultar precio</a>') + '</div>' +
       '<div class="card__body"><h3 class="card__name">' + p.name + '</h3>' +
-        '<p class="card__desc">' + C.METALS[m].short + ' · ' + p.desc + '</p>' +
+        '<p class="card__desc">' + C.METALS[m].label + (p.desc ? ' · ' + p.desc : '') + '</p>' +
         '<p class="card__price"><span class="price">' + C.precioTexto(p.metals[m]) + '</span>' +
         (Object.keys(p.metals).length > 1 ? '<span class="card__alt">También en ' + C.METALS[m === 'oro' ? 'plata' : 'oro'].short.toLowerCase() + '</span>' : '') +
       '</p></div></article>';
@@ -491,22 +493,22 @@
 
   /* ---------- Footer ---------- */
   function footerHTML() {
-    var shop = C.CATEGORIES.filter(function (c) { return c.home !== false; }).map(function (c) { return '<li><a href="categoria.html?cat=' + c.id + '">' + (c.shortName || c.name) + '</a></li>'; }).join('');
+    var shop = C.MENU.filter(function (m) { return m.cats; }).map(function (m) { return '<li><a href="' + C.urlCats(m.cats) + '">' + m.label + '</a></li>'; }).join('');
     return '<div class="footer__news"><div class="container footer__news-inner">' +
-        '<div><h2 class="h3 serif">Tu próximo universo<br>empieza aquí.</h2><p class="muted">Nuevas piezas, ideas y un poco de inspiración.</p></div>' +
+        '<div><h2 class="h3 serif">Entérate primero de las joyas nuevas</h2><p class="muted">Te escribimos cuando llegan piezas nuevas. Nada más.</p></div>' +
         '<form class="newsletter" data-newsletter><label class="label" for="nl-email">Tu correo electrónico</label>' +
         '<div class="newsletter__row"><input id="nl-email" type="email" required placeholder="nombre@correo.com">' +
-        '<button class="btn btn--primary" type="submit">Quiero ser parte</button></div>' +
+        '<button class="btn btn--primary" type="submit">Suscribirme</button></div>' +
         '<p class="muted small" data-nl-msg>Al suscribirte aceptas nuestra política de tratamiento de datos.</p></form>' +
       '</div></div>' +
       '<div class="container footer__main">' +
-        '<div class="footer__brand"><span class="logo__name">CAMELIA</span><p class="label">Dos metales, un universo.</p><p class="cert-line">Todo nuestro oro es 18K con certificado de autenticidad de por vida.</p>' +
+        '<div class="footer__brand"><span class="logo__name">CAMELIA</span><p class="cert-line">Oro 18K y plata 925 hechos a mano en Colombia. Todo nuestro oro lleva certificado de autenticidad de por vida.</p>' +
           '<div class="footer__social">' +
             '<a class="icon-btn" href="#" aria-label="Instagram">' + C.icon('instagram') + '</a>' +
             '<a class="icon-btn" href="#" aria-label="TikTok">' + C.icon('tiktok') + '</a>' +
             '<a class="icon-btn" href="https://wa.me/570000000000" aria-label="WhatsApp">' + C.icon('whatsapp') + '</a></div></div>' +
         '<div><p class="label">Tienda</p><ul>' + shop + '</ul></div>' +
-        '<div><p class="label">Diseña</p><ul><li><a href="disena.html">Configurador 3D</a></li><li><a href="disena.html?modo=ia">Crear con IA</a></li><li><a href="index.html#proceso">Cómo lo hacemos</a></li></ul></div>' +
+        '<div><p class="label">Hecho para ti</p><ul><li><a href="personaliza-pulsera.html">Personaliza tu pulsera</a></li><li><a href="disena.html">Diseña tu joya</a></li><li><a href="index.html#regalos">Regalos por precio</a></li></ul></div>' +
         '<div><p class="label">Ayuda</p><ul><li><a href="#">Envíos</a></li><li><a href="#">Cambios y devoluciones</a></li><li><a href="#">Guía de tallas</a></li><li><a href="#">Cuidado de tu joya</a></li></ul></div>' +
         '<div><p class="label">Marca</p><ul><li><a href="#">Nosotros</a></li><li><a href="#">Contacto</a></li><li><a href="#">Preguntas frecuentes</a></li></ul></div>' +
       '</div>' +
@@ -542,9 +544,7 @@
     updateFavCount();
     applyMetal(state.metal, true);
 
-    header.querySelectorAll('.metal-switch button').forEach(function (b) {
-      b.addEventListener('click', function () { applyMetal(b.dataset.metal); });
-    });
+    C.catalogo.then(podarMenu);
     document.querySelectorAll('[data-open-mobile]').forEach(function (b) {
       b.addEventListener('click', function () { openLayer(document.querySelector('[data-mobile-nav]')); });
     });

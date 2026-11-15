@@ -18,9 +18,8 @@ CAMELIA.STONES = {
 
 CAMELIA.PRICE_RANGES = [
   { id: 'menos-200', label: 'Menos de $200.000', min: 0, max: 200000 },
-  { id: '200-500', label: '$200.000 a $500.000', min: 200000, max: 500000 },
-  { id: '500-1500', label: '$500.000 a $1.500.000', min: 500000, max: 1500000 },
-  { id: 'mas-1500', label: 'Más de $1.500.000', min: 1500000, max: Infinity },
+  { id: '200-1000', label: '$200.000 a $1.000.000', min: 200000, max: 1000000 },
+  { id: 'mas-1000', label: 'Más de $1.000.000', min: 1000000, max: Infinity },
 ];
 
 /* Categorías del menú principal. `shape` define el dibujo que se usa como imagen. */
