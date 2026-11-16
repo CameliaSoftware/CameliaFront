@@ -201,7 +201,7 @@
         C.vaciarBolsa();
         raiz.innerHTML = '<section class="area__vacio co__ok"><span class="co__sello">' + C.icon('seal') + '</span>' +
           '<h1 class="h2">¡Gracias! Tu pago fue aprobado</h1>' +
-          '<p class="muted">Ya empezamos a preparar tu joya. Te escribimos por WhatsApp con la guía de envío.</p>' + pie +
+          '<p class="muted">Te escribiremos por WhatsApp para confirmarte la orden.</p>' + pie +
           '<div class="co__acciones"><a class="btn btn--primary" href="cuenta.html">Ver mis pedidos</a><a class="btn btn--ghost" href="index.html">Seguir mirando</a></div></section>';
       } else if (p.estado === 'pendiente') {
         raiz.innerHTML = '<section class="area__vacio"><h1 class="h2">Tu pago está en proceso</h1>' +
