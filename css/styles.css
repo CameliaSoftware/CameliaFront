@@ -1379,4 +1379,3 @@ a.combo__item { grid-template-columns: 56px 1fr auto; color: inherit; text-decor
 .pedido__estado--pagado, .pedido__estado--preparando, .pedido__estado--enviado, .pedido__estado--entregado { background: #E6F2E8; color: #2F6B3B; }
 .pedido__estado--rechazado, .pedido__estado--error, .pedido__estado--anulado, .pedido__estado--cancelado { background: #F8E7E4; color: #9A3A2C; }
 .adm__pedido { display: grid; gap: 8px; margin-bottom: 12px; } .adm__pedido ul { margin: 0; padding-left: 18px; } .adm__pedido .select { width: auto; }
-.co__cuenta { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; padding: 16px 20px; background: var(--cream); }
