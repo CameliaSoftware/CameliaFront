@@ -7,6 +7,7 @@
   var esc = C.esc;
   var WHATSAPP = '570000000000';   // reemplazar por el número de Camelia (código de país + número)
   var API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'http://localhost:4000' : 'https://cameliaback.onrender.com';
+  var invitado = false;   // compra sin cuenta: los datos se escriben aquí y no se guardan en un perfil
   var raiz, uid, perfil, dirs = [], dirSel = null, nuevaDir = false;
 
   function totales() {
@@ -15,13 +16,12 @@
     return { sub: sub, envio: envio, total: sub + envio };
   }
 
+  /* Sin sesión: se compra escribiendo los datos. Entrar con Google es opcional (guarda los datos para la próxima). */
   function sinSesion() {
-    raiz.innerHTML = '<section class="area__vacio"><span class="logo__name">CAMELIA</span>' +
-      '<h1 class="h2">Finalizar compra</h1>' +
-      '<p class="muted">Para finalizar tu compra entra con Google. Es un clic y guardamos tus datos para la próxima.</p>' +
-      '<button class="btn btn--primary" data-entrar>Entrar con Google</button></section>';
-    raiz.querySelector('[data-entrar]').addEventListener('click', function () { C.auth.entrar('checkout.html'); });
-    C.auth.entrar('checkout.html', 'Para finalizar tu compra entra con Google. Es un clic y guardamos tus datos para la próxima.');
+    invitado = true; perfil = {}; dirs = [];
+    pintar();
+    ajustarInvitado();
+    eventos();
   }
 
   function carritoVacio() {
@@ -36,6 +36,8 @@
     raiz.innerHTML =
       '<div class="area__head"><div><span class="label">Paso final</span><h1 class="h2">Finalizar compra</h1></div>' +
         '<span class="cert-badge">' + C.icon('shield') + C.CERTIFICADO + '</span></div>' +
+      (invitado ? '<div class="area__card co__cuenta"><span>¿Tienes cuenta de Google? Entra y guardamos tus datos y direcciones para la próxima compra.</span>' +
+        '<button class="btn btn--ghost" data-entrar>Entrar con Google</button></div>' : '') +
       '<div class="co">' +
         '<div class="co__pasos">' +
           '<form class="area__card" data-datos novalidate>' +
@@ -43,7 +45,8 @@
             '<div class="form-grid">' +
               C.campo('Nombre completo', '<input class="input" name="nombre" required value="' + esc(perfil.nombre) + '">', true) +
               C.campo('Celular (WhatsApp)', '<input class="input" name="celular" inputmode="tel" required placeholder="300 123 4567" value="' + esc(perfil.celular) + '">') +
-              C.campo('Correo', '<input class="input" value="' + esc(perfil.email) + '" disabled>') +
+              (invitado ? C.campo('Correo', '<input class="input" type="email" name="email" required autocomplete="email" placeholder="tucorreo@ejemplo.com">')
+                : C.campo('Correo', '<input class="input" value="' + esc(perfil.email) + '" disabled>')) +
               C.campo('Tipo de documento', '<select class="select" name="tipo_documento" required><option value="">Elige…</option>' +
                 [['CC', 'Cédula de ciudadanía'], ['CE', 'Cédula de extranjería'], ['NIT', 'NIT (empresa)'], ['PP', 'Pasaporte'], ['TI', 'Tarjeta de identidad']].map(function (o) {
                   return '<option value="' + o[0] + '"' + (perfil.tipo_documento === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
@@ -90,6 +93,15 @@
       '</div>';
   }
 
+  /* En compra sin cuenta la dirección no se guarda: sin alias, sin "principal" y sin botones */
+  function ajustarInvitado() {
+    if (!invitado) return;
+    var f = raiz.querySelector('[data-dir-form]');
+    if (!f) return;
+    ['[name=alias]', '[name=predeterminada]'].forEach(function (sel) { var el = f.querySelector(sel); if (el) el.closest('label').remove(); });
+    var acc = f.querySelector('.form-actions'); if (acc) acc.remove();
+  }
+
   function error(texto) {
     var el = raiz.querySelector('[data-co-error]');
     el.textContent = texto; el.hidden = !texto;
@@ -108,6 +120,10 @@
     };
     var faltan = [];
     if (datos.nombre.length < 3) faltan.push('tu nombre');
+    if (invitado) {
+      datos.email = String(f.get('email') || '').trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.email)) faltan.push('un correo válido');
+    }
     if (!C.celularValido(datos.celular)) faltan.push('un celular válido');
     if (!datos.tipo_documento || !/^[0-9A-Za-z.-]{4,20}$/.test(datos.numero_documento)) faltan.push('tu documento');
     if (!datos.acepta_datos) faltan.push('la autorización de datos');
@@ -124,6 +140,7 @@
     error('');
 
     btn.disabled = true;
+    if (invitado) { perfil = datos; return Promise.resolve(dirNueva); }
     // Guarda los datos en el perfil (para la próxima compra) y la dirección nueva
     return C.perfil.guardar(uid, datos)
       .then(function (p) { perfil = p; return dirNueva ? C.direcciones.guardar(uid, dirNueva) : dirs.find(function (d) { return d.id === dirSel; }); })
@@ -135,6 +152,7 @@
   }
 
   function token() {
+    if (!C.sb) return Promise.resolve(null);
     return C.sb.auth.getSession().then(function (r) { return r.data.session && r.data.session.access_token; });
   }
 
@@ -146,11 +164,15 @@
     btn.textContent = 'Preparando tu pago…';
     listo.then(function (dir) {
       return token().then(function (t) {
+        var h = { 'Content-Type': 'application/json' };
+        if (t && !invitado) h.Authorization = 'Bearer ' + t;
         return fetch(API + '/api/pagos/pedido', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+          headers: h,
           body: JSON.stringify({
-            direccion_id: dir.id,
+            direccion_id: invitado ? undefined : dir.id,
+            cliente: invitado ? perfil : undefined,
+            direccion: invitado ? dir : undefined,
             items: C.state.cart.map(function (i) { return { key: i.key, qty: i.qty, name: i.name, detail: i.detail, price: i.price, metal: i.metal, img: i.img || null }; }),
           }),
         });
@@ -187,34 +209,39 @@
   }
 
   /* --- Regreso desde Wompi --- */
-  function resultado(ref, txId, intento) {
+  function resultado(ref, txId, clave, intento) {
     raiz.innerHTML = '<section class="area__vacio"><span class="logo__name">CAMELIA</span><h1 class="h2">Revisando tu pago…</h1><p class="muted">Un momento, estamos confirmando con el banco.</p></section>';
+    var conCuenta = false;
     token().then(function (t) {
-      if (!t) throw new Error('Entra con tu cuenta para ver tu pedido.');
-      return fetch(API + '/api/pagos/pedido/' + encodeURIComponent(ref) + (txId ? '?id=' + encodeURIComponent(txId) : ''), { headers: { Authorization: 'Bearer ' + t } });
+      conCuenta = !!t;
+      var q = new URLSearchParams();
+      if (txId) q.set('id', txId);
+      if (clave) q.set('t', clave);
+      return fetch(API + '/api/pagos/pedido/' + encodeURIComponent(ref) + '?' + q.toString(), { headers: t ? { Authorization: 'Bearer ' + t } : {} });
     }).then(function (r) {
       return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'No se pudo consultar el pedido.'); return j; });
     }).then(function (p) {
-      if (p.estado === 'pendiente' && intento < 8) { setTimeout(function () { resultado(ref, txId, intento + 1); }, 4000); return; }
+      if (p.estado === 'pendiente' && intento < 8) { setTimeout(function () { resultado(ref, txId, clave, intento + 1); }, 4000); return; }
       var pie = '<p class="small muted">Pedido ' + esc(p.referencia) + ' · ' + C.formatCOP(p.total) + '</p>';
+      var verPedidos = conCuenta ? '<a class="btn btn--primary" href="cuenta.html">Ver mis pedidos</a>' : '<a class="btn btn--primary" href="index.html">Volver a la tienda</a>';
       if (p.estado === 'pagado' || ['preparando', 'enviado', 'entregado'].indexOf(p.estado) > -1) {
         C.vaciarBolsa();
         raiz.innerHTML = '<section class="area__vacio co__ok"><span class="co__sello">' + C.icon('seal') + '</span>' +
           '<h1 class="h2">¡Gracias! Tu pago fue aprobado</h1>' +
           '<p class="muted">Te escribiremos por WhatsApp para confirmarte la orden.</p>' + pie +
-          '<div class="co__acciones"><a class="btn btn--primary" href="cuenta.html">Ver mis pedidos</a><a class="btn btn--ghost" href="index.html">Seguir mirando</a></div></section>';
+          '<div class="co__acciones">' + verPedidos + (conCuenta ? '<a class="btn btn--ghost" href="index.html">Seguir mirando</a>' : '') + '</div></section>';
       } else if (p.estado === 'pendiente') {
         raiz.innerHTML = '<section class="area__vacio"><h1 class="h2">Tu pago está en proceso</h1>' +
-          '<p class="muted">El banco todavía no lo confirma (pasa a veces con PSE). Apenas se apruebe lo verás en tus pedidos.</p>' + pie +
-          '<div class="co__acciones"><a class="btn btn--primary" href="cuenta.html">Ver mis pedidos</a></div></section>';
+          '<p class="muted">El banco todavía no lo confirma (pasa a veces con PSE). Apenas se apruebe te escribimos por WhatsApp. Guarda el número de tu pedido.</p>' + pie +
+          '<div class="co__acciones">' + verPedidos + '</div></section>';
       } else {
         raiz.innerHTML = '<section class="area__vacio"><h1 class="h2">El pago no se completó</h1>' +
           '<p class="muted">No se hizo ningún cobro. Puedes intentarlo otra vez con otro medio de pago; tu bolsa sigue guardada.</p>' + pie +
           '<div class="co__acciones"><a class="btn btn--primary" href="checkout.html">Intentar de nuevo</a></div></section>';
       }
     }).catch(function (e) {
-      raiz.innerHTML = '<section class="area__vacio"><h1 class="h2">No pudimos revisar tu pago</h1><p class="muted">' + esc(e.message) + '</p>' +
-        '<div class="co__acciones"><a class="btn btn--primary" href="cuenta.html">Ver mis pedidos</a></div></section>';
+      raiz.innerHTML = '<section class="area__vacio"><h1 class="h2">No pudimos revisar tu pago</h1><p class="muted">' + esc(e.message) + ' Si ya pagaste, escríbenos con el número de pedido ' + esc(ref) + '.</p>' +
+        '<div class="co__acciones"><a class="btn btn--primary" href="index.html">Volver a la tienda</a></div></section>';
     });
   }
 
@@ -225,12 +252,13 @@
     raiz.addEventListener('click', function (e) {
       if (e.target.closest('[data-dir-nueva]')) { nuevaDir = true; dirSel = null; pintar(); }
       if (e.target.closest('[data-dir-cancelar]')) { nuevaDir = false; pintar(); }
+      if (e.target.closest('[data-entrar]')) C.auth.entrar('checkout.html');
       if (e.target.closest('[data-pagar]')) pagar();
       if (e.target.closest('[data-confirmar]')) confirmar();
     });
     raiz.addEventListener('submit', function (e) {
       e.preventDefault();
-      if (!e.target.matches('[data-dir-form]')) return;
+      if (!e.target.matches('[data-dir-form]') || invitado) return;
       var form = e.target, r = C.direcciones.leerForm(form), err = form.querySelector('[data-dir-error]');
       if (r.error) { err.textContent = r.error; err.hidden = false; return; }
       C.direcciones.guardar(uid, r.datos).then(function (d) {
@@ -242,7 +270,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     raiz = document.querySelector('[data-pagina-checkout]');
     var q = new URLSearchParams(location.search);
-    if (q.get('pedido')) return C.auth.listo.then(function () { resultado(q.get('pedido'), q.get('id'), 0); });
+    if (q.get('pedido')) return C.auth.listo.then(function () { resultado(q.get('pedido'), q.get('id'), q.get('t'), 0); });
     if (!C.state.cart.length) return carritoVacio();
     C.auth.listo.then(function (u) {
       if (!u) return sinSesion();
