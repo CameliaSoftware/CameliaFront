@@ -10,8 +10,8 @@
       '<section class="area__vacio">' +
         '<span class="logo__name">CAMELIA</span>' +
         '<h1 class="h2">Tu cuenta</h1>' +
-        '<p class="muted">Entra con Google para ver tu perfil, tus direcciones y tus pedidos.</p>' +
-        '<button class="btn btn--primary" data-entrar>Entrar con Google</button>' +
+        '<p class="muted">Entra con Google o con tu correo para ver tu perfil, tus direcciones y tus pedidos.</p>' +
+        '<button class="btn btn--primary" data-entrar>Entrar o crear cuenta</button>' +
       '</section>';
     raiz.querySelector('[data-entrar]').addEventListener('click', function () { C.auth.entrar('cuenta.html'); });
   }
@@ -68,7 +68,7 @@
           '<h2 class="h4">Datos personales</h2>' +
           '<div class="form-grid">' +
             C.campo('Nombre completo', '<input class="input" name="nombre" required value="' + esc(perfil.nombre) + '">', true) +
-            C.campo('Correo (de tu cuenta de Google)', '<input class="input" value="' + esc(perfil.email) + '" disabled>', true) +
+            C.campo('Correo de tu cuenta', '<input class="input" value="' + esc(perfil.email) + '" disabled>', true) +
             C.campo('Celular (WhatsApp)', '<input class="input" name="celular" inputmode="tel" placeholder="300 123 4567" value="' + esc(perfil.celular) + '">') +
             C.campo('Cumpleaños <em>(opcional)</em>', '<input class="input" type="date" name="fecha_nacimiento" value="' + esc(perfil.fecha_nacimiento) + '">') +
             C.campo('Tipo de documento', '<select class="select" name="tipo_documento"><option value="">Elige…</option>' +

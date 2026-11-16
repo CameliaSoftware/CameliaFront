@@ -18,10 +18,10 @@
   function sinSesion() {
     raiz.innerHTML = '<section class="area__vacio"><span class="logo__name">CAMELIA</span>' +
       '<h1 class="h2">Finalizar compra</h1>' +
-      '<p class="muted">Para finalizar tu compra entra con Google. Es un clic y guardamos tus datos para la próxima.</p>' +
-      '<button class="btn btn--primary" data-entrar>Entrar con Google</button></section>';
+      '<p class="muted">Para comprar necesitas una cuenta. Entra con Google o con tu correo; si no tienes, créala en un minuto.</p>' +
+      '<button class="btn btn--primary" data-entrar>Entrar o crear cuenta</button></section>';
     raiz.querySelector('[data-entrar]').addEventListener('click', function () { C.auth.entrar('checkout.html'); });
-    C.auth.entrar('checkout.html', 'Para finalizar tu compra entra con Google. Es un clic y guardamos tus datos para la próxima.');
+    C.auth.entrar('checkout.html', 'Para comprar necesitas una cuenta. Entra con Google o con tu correo; si no tienes, créala en un minuto.');
   }
 
   function carritoVacio() {

@@ -1379,3 +1379,14 @@ a.combo__item { grid-template-columns: 56px 1fr auto; color: inherit; text-decor
 .pedido__estado--pagado, .pedido__estado--preparando, .pedido__estado--enviado, .pedido__estado--entregado { background: #E6F2E8; color: #2F6B3B; }
 .pedido__estado--rechazado, .pedido__estado--error, .pedido__estado--anulado, .pedido__estado--cancelado { background: #F8E7E4; color: #9A3A2C; }
 .adm__pedido { display: grid; gap: 8px; margin-bottom: 12px; } .adm__pedido ul { margin: 0; padding-left: 18px; } .adm__pedido .select { width: auto; }
+
+/* Entrar con correo */
+.login__o { display: flex; align-items: center; gap: 12px; margin: 18px 0 14px; color: var(--muted); font-size: 13px; }
+.login__o::before, .login__o::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.login__form { display: grid; gap: 12px; text-align: left; }
+.login__form .campo { display: grid; gap: 6px; font-size: 13px; color: var(--ink-2); }
+.login__form .btn { margin-top: 4px; }
+.login__form > .small { text-align: center; margin: 0; }
+.login__link { background: none; border: 0; padding: 0; font: inherit; color: var(--gold); text-decoration: underline; cursor: pointer; justify-self: center; font-size: 13px; }
+.login__ok { color: #2F6B3B; background: #E6F2E8; padding: 10px 12px; border-radius: var(--radius-sm); }
+.login__error:not([hidden]) { margin: 0; }
