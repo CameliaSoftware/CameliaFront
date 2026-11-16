@@ -1365,3 +1365,17 @@ a.combo__item { grid-template-columns: 56px 1fr auto; color: inherit; text-decor
   .legal__ficha dl { grid-template-columns: 1fr; gap: 2px; }
   .legal__ficha dd { margin-bottom: 8px; }
 }
+
+/* Pago con Wompi */
+.co__medios { margin-top: -4px; }
+.co__wa { justify-self: center; font-size: 13px; color: var(--muted); }
+.co__acciones { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+.co__sello { display: inline-grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--gold-soft); color: var(--gold); }
+.co__sello .icon { width: 30px; height: 30px; }
+.pedidos { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pedido { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.pedido__top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.pedido__estado { font-size: 12px; padding: 3px 10px; border-radius: var(--pill); background: var(--cream-2); color: var(--ink-2); white-space: nowrap; }
+.pedido__estado--pagado, .pedido__estado--preparando, .pedido__estado--enviado, .pedido__estado--entregado { background: #E6F2E8; color: #2F6B3B; }
+.pedido__estado--rechazado, .pedido__estado--error, .pedido__estado--anulado, .pedido__estado--cancelado { background: #F8E7E4; color: #9A3A2C; }
+.adm__pedido { display: grid; gap: 8px; margin-bottom: 12px; } .adm__pedido ul { margin: 0; padding-left: 18px; } .adm__pedido .select { width: auto; }

@@ -1,10 +1,12 @@
 /* Checkout: exige sesión con Google, completa datos y dirección, y resume el pedido.
-   Mientras no haya pasarela de pago, el pedido se confirma por WhatsApp con todo el detalle. */
+   Se paga con Wompi (PSE, Nequi, tarjeta…): el servidor crea el pedido con los precios reales y firma el pago.
+   Al volver de Wompi (checkout.html?pedido=REF&id=TX) se muestra el resultado. WhatsApp queda como respaldo. */
 
 (function () {
   var C = window.CAMELIA;
   var esc = C.esc;
   var WHATSAPP = '570000000000';   // reemplazar por el número de Camelia (código de país + número)
+  var API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'http://localhost:4000' : 'https://cameliaback.onrender.com';
   var raiz, uid, perfil, dirs = [], dirSel = null, nuevaDir = false;
 
   function totales() {
@@ -81,8 +83,9 @@
             '<span>Autorizo el tratamiento de mis datos personales según la <a href="privacidad.html" target="_blank">Política de tratamiento de datos</a> (Ley 1581 de 2012).</span></label>' +
           '<label class="check check--legal"><input type="checkbox" data-acepta-terminos> <span>Acepto los <a href="terminos.html" target="_blank">Términos y condiciones</a> y la <a href="cambios.html" target="_blank">política de cambios</a>.</span></label>' +
           '<p class="form-error" data-co-error hidden></p>' +
-          '<button class="btn btn--primary btn--block" data-confirmar>' + C.icon('whatsapp') + 'Confirmar pedido por WhatsApp</button>' +
-          '<p class="small muted">Te escribimos para confirmar y enviarte el link de pago (PSE, Nequi o tarjeta).</p>' +
+          '<button class="btn btn--primary btn--block" data-pagar>' + C.icon('shield') + 'Pagar ' + C.formatCOP(t.total) + '</button>' +
+          '<p class="small muted co__medios">Pago seguro con Wompi de Bancolombia: PSE, Nequi, tarjeta débito o crédito, Daviplata y botón Bancolombia.</p>' +
+          '<button class="link-arrow co__wa" data-confirmar>Prefiero confirmar por WhatsApp</button>' +
         '</aside>' +
       '</div>';
   }
@@ -93,7 +96,8 @@
     if (texto) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  function confirmar() {
+  /* Valida el formulario y guarda perfil y dirección. Devuelve una promesa con la dirección, o null si falta algo. */
+  function preparar(btn) {
     var f = new FormData(raiz.querySelector('[data-datos]'));
     var datos = {
       nombre: String(f.get('nombre') || '').trim(),
@@ -116,15 +120,59 @@
       if (r.error) { formDir.querySelector('[data-dir-error]').textContent = r.error; formDir.querySelector('[data-dir-error]').hidden = false; faltan.push('la dirección de envío'); }
       else dirNueva = r.datos;
     } else if (!dirSel) faltan.push('la dirección de envío');
-    if (faltan.length) return error('Para continuar falta: ' + faltan.join(', ') + '.');
+    if (faltan.length) { error('Para continuar falta: ' + faltan.join(', ') + '.'); return null; }
     error('');
 
-    var btn = raiz.querySelector('[data-confirmar]');
     btn.disabled = true;
     // Guarda los datos en el perfil (para la próxima compra) y la dirección nueva
-    C.perfil.guardar(uid, datos)
+    return C.perfil.guardar(uid, datos)
       .then(function (p) { perfil = p; return dirNueva ? C.direcciones.guardar(uid, dirNueva) : dirs.find(function (d) { return d.id === dirSel; }); })
       .then(function (dir) {
+        if (dirNueva) { dirs.push(dir); dirSel = dir.id; }
+        return dir;
+      })
+      .catch(function (e) { btn.disabled = false; error('No se pudo guardar: ' + e.message); throw e; });
+  }
+
+  function token() {
+    return C.sb.auth.getSession().then(function (r) { return r.data.session && r.data.session.access_token; });
+  }
+
+  function pagar() {
+    var btn = raiz.querySelector('[data-pagar]');
+    var listo = preparar(btn);
+    if (!listo) return;
+    var textoBtn = btn.innerHTML;
+    btn.textContent = 'Preparando tu pago…';
+    listo.then(function (dir) {
+      return token().then(function (t) {
+        return fetch(API + '/api/pagos/pedido', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+          body: JSON.stringify({
+            direccion_id: dir.id,
+            items: C.state.cart.map(function (i) { return { key: i.key, qty: i.qty, name: i.name, detail: i.detail, price: i.price, metal: i.metal, img: i.img || null }; }),
+          }),
+        });
+      });
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok || !j.url) throw new Error(j.error || 'No se pudo iniciar el pago.');
+        location.href = j.url;
+      });
+    }).catch(function (e) {
+      btn.disabled = false; btn.innerHTML = textoBtn;
+      if (e && e.message && !/^No se pudo guardar/.test(raiz.querySelector('[data-co-error]').textContent)) {
+        error(/Failed to fetch|NetworkError|Load failed/.test(e.message) ? 'No pudimos conectar con el sistema de pagos. Revisa tu internet e inténtalo de nuevo.' : e.message);
+      }
+    });
+  }
+
+  function confirmar() {
+    var btn = raiz.querySelector('[data-confirmar]');
+    var listo = preparar(btn);
+    if (!listo) return;
+    listo.then(function (dir) {
         var t = totales();
         var lineas = C.state.cart.map(function (i) { return '• ' + i.name + ' (' + i.detail + ') x' + i.qty + ' — ' + C.formatCOP(i.price * i.qty); });
         var msg = 'Hola Camelia, quiero confirmar este pedido:\n\n' + lineas.join('\n') +
@@ -135,8 +183,39 @@
         window.open('https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
         btn.disabled = false;
         C.avisar('Abrimos WhatsApp con tu pedido. Te confirmamos en minutos.');
-      })
-      .catch(function (e) { btn.disabled = false; error('No se pudo guardar: ' + e.message); });
+      }).catch(function () { /* el error ya se mostró */ });
+  }
+
+  /* --- Regreso desde Wompi --- */
+  function resultado(ref, txId, intento) {
+    raiz.innerHTML = '<section class="area__vacio"><span class="logo__name">CAMELIA</span><h1 class="h2">Revisando tu pago…</h1><p class="muted">Un momento, estamos confirmando con el banco.</p></section>';
+    token().then(function (t) {
+      if (!t) throw new Error('Entra con tu cuenta para ver tu pedido.');
+      return fetch(API + '/api/pagos/pedido/' + encodeURIComponent(ref) + (txId ? '?id=' + encodeURIComponent(txId) : ''), { headers: { Authorization: 'Bearer ' + t } });
+    }).then(function (r) {
+      return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'No se pudo consultar el pedido.'); return j; });
+    }).then(function (p) {
+      if (p.estado === 'pendiente' && intento < 8) { setTimeout(function () { resultado(ref, txId, intento + 1); }, 4000); return; }
+      var pie = '<p class="small muted">Pedido ' + esc(p.referencia) + ' · ' + C.formatCOP(p.total) + '</p>';
+      if (p.estado === 'pagado' || ['preparando', 'enviado', 'entregado'].indexOf(p.estado) > -1) {
+        C.vaciarBolsa();
+        raiz.innerHTML = '<section class="area__vacio co__ok"><span class="co__sello">' + C.icon('seal') + '</span>' +
+          '<h1 class="h2">¡Gracias! Tu pago fue aprobado</h1>' +
+          '<p class="muted">Ya empezamos a preparar tu joya. Te escribimos por WhatsApp con la guía de envío.</p>' + pie +
+          '<div class="co__acciones"><a class="btn btn--primary" href="cuenta.html">Ver mis pedidos</a><a class="btn btn--ghost" href="index.html">Seguir mirando</a></div></section>';
+      } else if (p.estado === 'pendiente') {
+        raiz.innerHTML = '<section class="area__vacio"><h1 class="h2">Tu pago está en proceso</h1>' +
+          '<p class="muted">El banco todavía no lo confirma (pasa a veces con PSE). Apenas se apruebe lo verás en tus pedidos.</p>' + pie +
+          '<div class="co__acciones"><a class="btn btn--primary" href="cuenta.html">Ver mis pedidos</a></div></section>';
+      } else {
+        raiz.innerHTML = '<section class="area__vacio"><h1 class="h2">El pago no se completó</h1>' +
+          '<p class="muted">No se hizo ningún cobro. Puedes intentarlo otra vez con otro medio de pago; tu bolsa sigue guardada.</p>' + pie +
+          '<div class="co__acciones"><a class="btn btn--primary" href="checkout.html">Intentar de nuevo</a></div></section>';
+      }
+    }).catch(function (e) {
+      raiz.innerHTML = '<section class="area__vacio"><h1 class="h2">No pudimos revisar tu pago</h1><p class="muted">' + esc(e.message) + '</p>' +
+        '<div class="co__acciones"><a class="btn btn--primary" href="cuenta.html">Ver mis pedidos</a></div></section>';
+    });
   }
 
   function eventos() {
@@ -146,6 +225,7 @@
     raiz.addEventListener('click', function (e) {
       if (e.target.closest('[data-dir-nueva]')) { nuevaDir = true; dirSel = null; pintar(); }
       if (e.target.closest('[data-dir-cancelar]')) { nuevaDir = false; pintar(); }
+      if (e.target.closest('[data-pagar]')) pagar();
       if (e.target.closest('[data-confirmar]')) confirmar();
     });
     raiz.addEventListener('submit', function (e) {
@@ -161,6 +241,8 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     raiz = document.querySelector('[data-pagina-checkout]');
+    var q = new URLSearchParams(location.search);
+    if (q.get('pedido')) return C.auth.listo.then(function () { resultado(q.get('pedido'), q.get('id'), 0); });
     if (!C.state.cart.length) return carritoVacio();
     C.auth.listo.then(function (u) {
       if (!u) return sinSesion();

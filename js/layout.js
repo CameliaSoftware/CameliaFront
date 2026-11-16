@@ -288,6 +288,12 @@
     openLayer(document.querySelector('[data-cart]'));
   };
 
+  C.vaciarBolsa = function () {
+    state.cart.length = 0;
+    save('cart', state.cart);
+    renderCart();
+  };
+
   C.addProductToCart = function (product, metal, extra) {
     if (!product.metals[metal]) { window.open(C.enlaceConsulta(product, metal), '_blank', 'noopener'); return; }
     extra = extra || {};

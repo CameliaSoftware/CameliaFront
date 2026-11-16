@@ -77,7 +77,7 @@
     raiz.innerHTML =
       '<div class="area__head"><div><span class="label">Administración</span><h1 class="h2">Joyas</h1>' +
         '<p class="muted small">' + (joyas.length - paquetes.length) + ' joyas · ' + joyas.filter(function (j) { return j.activo && j.estado === 'publicado'; }).length + ' visibles en la tienda</p></div>' +
-        '<div class="adm__acciones"><button class="btn btn--ghost" data-ir="precios">Precio del gramo</button><button class="btn btn--ghost" data-nuevo-paquete>📦 Nuevo paquete de fotos</button><button class="btn btn--primary" data-nueva>+ Nueva joya</button></div></div>' +
+        '<div class="adm__acciones"><button class="btn btn--ghost" data-ir="pedidos">Pedidos</button><button class="btn btn--ghost" data-ir="precios">Precio del gramo</button><button class="btn btn--ghost" data-nuevo-paquete>📦 Nuevo paquete de fotos</button><button class="btn btn--primary" data-nueva>+ Nueva joya</button></div></div>' +
       (paquetes.length ? '<section class="area__card adm__paquetes"><div class="area__card-head"><h2 class="h4">Paquetes de fotos pendientes (' + paquetes.length + ')</h2>' +
         '<span class="small muted">Ocultos en la tienda hasta completarlos con precio y descripción</span></div>' + paquetes.map(filaPaquete).join('') + '</section>' : '') +
       '<div class="adm__filtros"><input class="input" type="search" placeholder="Buscar por nombre o categoría…" data-buscar value="' + esc(filtro.q) + '">' +
@@ -735,13 +735,55 @@
   }
 
   /* ---------- Eventos ---------- */
+  /* ---------- Pedidos (pagos de Wompi) ---------- */
+  var ESTADOS_PEDIDO = [['pendiente', 'Esperando pago'], ['pagado', 'Pagado · por preparar'], ['preparando', 'En preparación'], ['enviado', 'Enviado'],
+    ['entregado', 'Entregado'], ['rechazado', 'Pago rechazado'], ['anulado', 'Anulado'], ['error', 'Revisar pago'], ['cancelado', 'Cancelado']];
+  var pedidos = [], verPendientes = false;
+  function pintarPedidos() {
+    raiz.innerHTML = '<p class="muted" style="padding:60px 0;text-align:center">Cargando pedidos…</p>';
+    C.sb.from('pedidos').select('*').order('creado', { ascending: false }).limit(200).then(function (r) {
+      if (r.error) throw r.error;
+      pedidos = r.data || [];
+      pintarListaPedidos();
+    }).catch(function (e) { raiz.innerHTML = '<p class="form-error" style="padding:60px 0">No se pudieron cargar los pedidos: ' + esc(e.message) + '</p>'; });
+  }
+  function pintarListaPedidos() {
+    var lista = pedidos.filter(function (p) { return verPendientes || p.estado !== 'pendiente'; });
+    var porPreparar = pedidos.filter(function (p) { return p.estado === 'pagado'; }).length;
+    raiz.innerHTML =
+      '<div class="area__head"><div><button class="link-arrow small" data-volver>← Joyas</button><h1 class="h2">Pedidos</h1>' +
+        '<p class="muted small">' + porPreparar + ' pagados por preparar · los pagos con Wompi se marcan solos</p></div>' +
+        '<label class="check"><input type="checkbox" data-ver-pendientes' + (verPendientes ? ' checked' : '') + '> <span>Mostrar los que no terminaron de pagar</span></label></div>' +
+      (lista.length ? lista.map(function (p) {
+        var c = p.cliente || {}, d = p.direccion || {};
+        return '<article class="area__card adm__pedido"><div class="pedido__top"><div><strong>' + esc(p.referencia) + '</strong> · ' + C.formatCOP(p.total) +
+            '<br><span class="muted small">' + new Date(p.creado).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) + (p.metodo_pago ? ' · ' + esc(p.metodo_pago) : '') + '</span></div>' +
+            '<select class="select" data-estado-pedido="' + p.id + '">' + op(ESTADOS_PEDIDO, p.estado) + '</select></div>' +
+          (p.precio_verificado ? '' : '<p class="form-error small">Trae joyas personalizadas: revisa que el precio cobrado corresponda al diseño.</p>') +
+          '<ul class="small">' + (p.items || []).map(function (i) { return '<li>' + esc(i.nombre) + ' — ' + esc(i.detalle) + ' · x' + i.cantidad + ' · ' + C.formatCOP(i.precio * i.cantidad) + '</li>'; }).join('') + '</ul>' +
+          '<p class="small muted">Envío ' + (p.envio ? C.formatCOP(p.envio) : 'gratis') + '</p>' +
+          '<p class="small"><strong>' + esc(c.nombre) + '</strong> · ' + esc(c.tipo_documento) + ' ' + esc(c.numero_documento) + ' · ' + esc(c.celular) + ' · ' + esc(c.email) +
+          '<br>Enviar a ' + esc(d.nombre_recibe) + ' (' + esc(d.celular) + '): ' + esc(d.direccion) + (d.barrio ? ', ' + esc(d.barrio) : '') + (d.detalle ? ', ' + esc(d.detalle) : '') + ', ' + esc(d.ciudad) + ', ' + esc(d.departamento) + '</p></article>';
+      }).join('') : '<p class="muted">Todavía no hay pedidos.</p>');
+  }
+
   function ir(v, j) {
     vista = v; editando = j || null;
-    if (v === 'lista') pintarLista(); else if (v === 'precios') pintarPreciosGramo(); else if (v === 'paquete') pintarPaquete(); else pintarEditor();
+    if (v === 'lista') pintarLista(); else if (v === 'pedidos') pintarPedidos(); else if (v === 'precios') pintarPreciosGramo(); else if (v === 'paquete') pintarPaquete(); else pintarEditor();
     window.scrollTo(0, 0);
   }
 
   function eventos() {
+    raiz.addEventListener('change', function (e) {
+      if (e.target.matches('[data-ver-pendientes]')) { verPendientes = e.target.checked; return pintarListaPedidos(); }
+      var sel = e.target.closest('[data-estado-pedido]');
+      if (!sel) return;
+      C.sb.from('pedidos').update({ estado: sel.value }).eq('id', sel.dataset.estadoPedido).then(function (r) {
+        if (r.error) return C.avisar('No se pudo cambiar el estado: ' + r.error.message, 'error');
+        var p = pedidos.find(function (x) { return x.id === sel.dataset.estadoPedido; }); if (p) p.estado = sel.value;
+        C.avisar('Estado actualizado.');
+      });
+    });
     raiz.addEventListener('click', function (e) {
       var b = function (s) { return e.target.closest(s); }, el;
       if (b('[data-volver]')) return ir('lista');

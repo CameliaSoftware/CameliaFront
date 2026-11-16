@@ -23,6 +23,27 @@
     }).join('');
   }
 
+  var pedidos = null;
+  var ESTADO_PEDIDO = {
+    pendiente: 'Esperando pago', pagado: 'Pagado', rechazado: 'Pago rechazado', anulado: 'Anulado', error: 'Revisar pago',
+    preparando: 'En preparación', enviado: 'Enviado', entregado: 'Entregado', cancelado: 'Cancelado',
+  };
+  function pedidosHTML() {
+    if (pedidos === null) return '<p class="muted small">Cargando tus pedidos…</p>';
+    var lista = pedidos.filter(function (p) { return p.estado !== 'pendiente' || Date.now() - new Date(p.creado) < 864e5; });
+    if (!lista.length) return '<p class="muted small">Aún no tienes pedidos. Cuando compres, aquí verás su estado.</p><a class="btn btn--ghost" href="categoria.html">Ver joyas</a>';
+    return '<ul class="pedidos">' + lista.map(function (p) {
+      return '<li class="pedido"><div class="pedido__top"><strong>' + esc(p.referencia) + '</strong>' +
+        '<span class="pedido__estado pedido__estado--' + p.estado + '">' + (ESTADO_PEDIDO[p.estado] || p.estado) + '</span></div>' +
+        '<span class="muted small">' + new Date(p.creado).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) + ' · ' + C.formatCOP(p.total) + '</span>' +
+        '<span class="small">' + (p.items || []).map(function (i) { return esc(i.nombre) + (i.cantidad > 1 ? ' x' + i.cantidad : ''); }).join(' · ') + '</span></li>';
+    }).join('') + '</ul>';
+  }
+  function cargarPedidos() {
+    C.sb.from('pedidos').select('referencia, estado, total, items, creado').eq('usuario_id', uid).order('creado', { ascending: false }).limit(30)
+      .then(function (r) { pedidos = r.data || []; pintar(); });
+  }
+
   function pintar() {
     setTimeout(function () { var l = raiz.querySelector('[data-link-admin]'); if (l) l.hidden = !esAdmin; });
     var falta = C.perfil.faltantes(perfil, dirs);
@@ -94,8 +115,7 @@
 
         '<section class="area__card">' +
           '<h2 class="h4">Mis pedidos</h2>' +
-          '<p class="muted small">Aquí verás tus pedidos, su estado y el certificado de oro 18K de cada joya.</p>' +
-          '<a class="btn btn--ghost" href="categoria.html">Ver joyas</a>' +
+          pedidosHTML() +
         '</section>' +
       '</div>';
   }
@@ -172,6 +192,7 @@
         perfil = r[0]; dirs = r[1];
         pintar();
         eventos();
+        cargarPedidos();
         // Si la cuenta es de administrador, mostrar el acceso al panel
         C.sb.rpc('es_admin').then(function (x) {
           if (!x.data) return;
