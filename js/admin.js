@@ -128,7 +128,7 @@
      paquetes/<id>/ref/…  fotos reales (referencia, no se publican)
      paquetes/<id>/ia/<rol>-<fecha>.png  propuestas de la IA pendientes de aprobar */
   var ROLES_IA = [['principal', 'Fotografía principal'], ['detalle', 'Fotografía de detalle'], ['premium', 'Presentación premium']];
-  var paq = { id: null, refs: [], propuestas: [], generando: {}, calidad: 'medium', extra: '', blobs: {}, elegidas: { principal: true, detalle: true, premium: true } };
+  var paq = { id: null, refs: [], propuestas: [], generando: {}, calidad: 'medium', extra: '', blobs: {}, elegidas: (function () { try { return JSON.parse(localStorage.getItem('camelia:ia-elegidas')) || null; } catch (x) { return null; } })() || { principal: true, detalle: false, premium: false } };
 
   function carpeta(id, sub) { return 'paquetes/' + id + '/' + sub; }
   function listar(ruta) {
@@ -204,14 +204,14 @@
       '</section>' +
 
       '<section class="area__card"><div class="area__card-head"><h2 class="h4">2. Fotos profesionales con IA</h2><span class="small muted">Prompt de fotografía de joyería · formato cuadrado</span></div>' +
+        '<div class="adm__gen-roles"><span class="small"><strong>¿Cuáles fotos quieres?</strong> Toca para elegir</span><div class="adm__chips">' + ROLES_IA.map(function (r) {
+          return '<label class="adm__chip"><input type="checkbox" data-rol-elegir="' + r[0] + '"' + (paq.elegidas[r[0]] ? ' checked' : '') + '><span>' + r[1] + '</span></label>';
+        }).join('') + '</div></div>' +
         '<div class="adm__gen-ctrl">' +
           '<input class="input" data-paq-extra placeholder="Indicación extra (opcional): ej. convertir el metal a plata, fondo satén" value="' + esc(paq.extra) + '">' +
           '<select class="select" data-paq-calidad>' + op([['low', 'Calidad rápida'], ['medium', 'Calidad normal'], ['high', 'Calidad alta']], paq.calidad) + '</select>' +
           '<button type="button" class="btn btn--primary" data-generar-todas' + (!paq.refs.length || hayGen || !cuantas ? ' disabled' : '') + '>✦ Generar ' + (cuantas === 1 ? '1 foto' : cuantas + ' fotos') + '</button>' +
         '</div>' +
-        '<div class="adm__gen-roles"><span class="small muted">¿Cuáles generar?</span>' + ROLES_IA.map(function (r) {
-          return '<label class="check small"><input type="checkbox" data-rol-elegir="' + r[0] + '"' + (paq.elegidas[r[0]] ? ' checked' : '') + '> ' + r[1] + '</label>';
-        }).join('') + '</div>' +
         '<div class="adm__propuestas">' +
           ROLES_IA.filter(function (r) { return paq.generando[r[0]]; }).map(function (r) {
             return '<figure class="adm__propuesta is-cargando"><div class="adm__propuesta-img"><span class="ia__spinner"></span><span class="small">Haciendo la ' + r[1].toLowerCase() + '… (hasta 1 minuto)</span></div><figcaption><strong class="small">' + r[1] + '</strong></figcaption></figure>';
@@ -821,6 +821,7 @@
       if (t.matches('[data-paq-calidad]')) paq.calidad = t.value;
       if (t.matches('[data-rol-elegir]')) {
         paq.elegidas[t.dataset.rolElegir] = t.checked;
+        try { localStorage.setItem('camelia:ia-elegidas', JSON.stringify(paq.elegidas)); } catch (x) { /* sin almacenamiento */ }
         var n = ROLES_IA.filter(function (r) { return paq.elegidas[r[0]]; }).length, btn = raiz.querySelector('[data-generar-todas]');
         btn.textContent = '✦ Generar ' + (n === 1 ? '1 foto' : n + ' fotos');
         btn.disabled = !n || !paq.refs.length || Object.keys(paq.generando).some(function (k) { return paq.generando[k]; });

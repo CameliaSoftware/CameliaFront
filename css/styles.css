@@ -1177,7 +1177,7 @@ a.combo__item { grid-template-columns: 56px 1fr auto; color: inherit; text-decor
   .adm__gen-ctrl { grid-template-columns: 1fr; }
   .adm__propuestas { grid-template-columns: 1fr; }
 }
-.adm__gen-roles { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin: -6px 0 16px; }
+.adm__gen-roles { display: grid; gap: 8px; margin: 0 0 14px; }
 
 /* ---------- Letrerito flotante: personaliza tu pulsera ---------- */
 .letrero { position: fixed; left: 24px; bottom: 24px; z-index: 60; display: flex; align-items: stretch; max-width: 340px; background: var(--bg); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 24px 48px -20px rgba(60, 48, 25, .35); opacity: 0; transform: translateY(20px); pointer-events: none; transition: opacity .4s ease, transform .4s ease; }
@@ -1390,3 +1390,12 @@ a.combo__item { grid-template-columns: 56px 1fr auto; color: inherit; text-decor
 .login__link { background: none; border: 0; padding: 0; font: inherit; color: var(--gold); text-decoration: underline; cursor: pointer; justify-self: center; font-size: 13px; }
 .login__ok { color: #2F6B3B; background: #E6F2E8; padding: 10px 12px; border-radius: var(--radius-sm); }
 .login__error:not([hidden]) { margin: 0; }
+
+.adm__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm__chip { position: relative; cursor: pointer; }
+.adm__chip input { position: absolute; opacity: 0; pointer-events: none; }
+.adm__chip span { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border: 1px solid var(--line-2); border-radius: var(--pill); font-size: 14px; background: var(--bg); transition: all .15s; }
+.adm__chip span::before { content: ''; width: 14px; height: 14px; border: 1.5px solid var(--line-2); border-radius: 4px; }
+.adm__chip input:checked + span { border-color: var(--gold); background: var(--gold-soft); color: var(--ink); }
+.adm__chip input:checked + span::before { background: var(--gold); border-color: var(--gold); box-shadow: inset 0 0 0 2px var(--gold-soft); }
+.adm__chip input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
