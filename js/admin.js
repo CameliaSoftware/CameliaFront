@@ -127,7 +127,7 @@
   /* Archivos del paquete en el bucket privado "originales":
      paquetes/<id>/ref/…  fotos reales (referencia, no se publican)
      paquetes/<id>/ia/<rol>-<fecha>.png  propuestas de la IA pendientes de aprobar */
-  var ROLES_IA = [['principal', 'Fotografía principal'], ['detalle', 'Fotografía de detalle'], ['premium', 'Presentación premium']];
+  var ROLES_IA = [['principal', 'Fotografía principal'], ['detalle', 'Fotografía de detalle'], ['puesta', 'Puesta en una persona'], ['premium', 'Presentación premium']];
   var paq = { id: null, refs: [], propuestas: [], generando: {}, calidad: 'medium', extra: '', blobs: {}, elegidas: (function () { try { return JSON.parse(localStorage.getItem('camelia:ia-elegidas')) || null; } catch (x) { return null; } })() || { principal: true, detalle: false, premium: false } };
 
   function carpeta(id, sub) { return 'paquetes/' + id + '/' + sub; }
@@ -648,7 +648,7 @@
               return C.sb.from('imagenes').insert({
                 producto_id: j.id, archivo: ruta, archivo_original: ruta, con_marca: true,
                 descripcion: j.nombre + ' — foto ' + orden, alt: j.nombre,
-                tipo: i === 0 ? tipoInicial : 'detalle', origen: 'ia', orden: orden,
+                tipo: /^puesta/.test(a.name) ? 'modelo' : (i === 0 ? tipoInicial : 'detalle'), origen: 'ia', orden: orden,   // la foto puesta en una persona queda como "modelo"
                 metal: j.variantes.length === 1 ? j.variantes[0].metal : null,
                 ancho: r.w, alto: r.h, peso_kb: Math.round(r.marcada.size / 1024),
               });
