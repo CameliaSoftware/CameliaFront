@@ -127,8 +127,13 @@
   /* Archivos del paquete en el bucket privado "originales":
      paquetes/<id>/ref/…  fotos reales (referencia, no se publican)
      paquetes/<id>/ia/<rol>-<fecha>.png  propuestas de la IA pendientes de aprobar */
-  var ROLES_IA = [['principal', 'Fotografía principal'], ['detalle', 'Fotografía de detalle'], ['puesta', 'Puesta en una persona'], ['premium', 'Presentación premium']];
-  var paq = { id: null, refs: [], propuestas: [], generando: {}, calidad: 'medium', extra: '', blobs: {}, elegidas: (function () { try { return JSON.parse(localStorage.getItem('camelia:ia-elegidas')) || null; } catch (x) { return null; } })() || { principal: true, detalle: false, premium: false } };
+  var ROLES_IA = [['principal', 'Fotografía principal'], ['detalle', 'Fotografía de detalle'], ['puesta', 'Puesta en una persona']];
+  var paq = { id: null, refs: [], propuestas: [], generando: {}, calidad: 'medium', extra: '', blobs: {}, elegidas: (function () {
+    var e = null;
+    try { e = JSON.parse(localStorage.getItem('camelia:ia-elegidas')); } catch (x) { /* sin almacenamiento */ }
+    if (!e || !('puesta' in e)) e = { principal: true, detalle: true, puesta: true };   // por defecto las 3
+    return e;
+  })() };
 
   function carpeta(id, sub) { return 'paquetes/' + id + '/' + sub; }
   function listar(ruta) {
